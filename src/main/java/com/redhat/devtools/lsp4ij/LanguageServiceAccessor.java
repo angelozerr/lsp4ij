@@ -266,21 +266,29 @@ public class LanguageServiceAccessor {
         Set<ContentTypeToLanguageServerDefinition> asyncMatchedDefinitions = null;
 
         // look for running language servers via content-type
-        Queue<Object> contentTypes = new LinkedList<>();
+        Queue<Object> languages = new LinkedList<>();
         Set<Object> processedContentTypes = new HashSet<>();
         Language language= LSPIJUtils.getFileLanguage(file, project);
         if (language != null) {
-            contentTypes.add(language);
+            languages.add(language);
         }
-        contentTypes.add(file.getFileType());
+        FileType fileType = file.getFileType();
+        if (fileType != null) {
+            languages.add(fileType);
+        }
 
-        while (!contentTypes.isEmpty()) {
-            Object contentType = contentTypes.poll();
+        while (!languages.isEmpty()) {
+            Object contentType = languages.poll();
             if (processedContentTypes.contains(contentType)) {
                 continue;
             }
-            @Nullable Language currentLanguage = contentType instanceof  Language ? (Language) contentType : null;
-            @Nullable FileType currentFileType = contentType instanceof  FileType ? (FileType) contentType : null;
+            Language currentLanguage = null;
+            FileType currentFileType = null;
+            if (contentType instanceof FileType) {
+                currentFileType = (FileType) contentType;
+            } else {
+                currentLanguage = (Language) contentType;
+            }
             // Loop for server/language mapping
             for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance()
                     .findLanguageServerDefinitionFor(currentLanguage, currentFileType)) {

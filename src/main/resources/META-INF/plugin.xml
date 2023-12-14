@@ -141,6 +141,7 @@
 
     <!-- LSP consoles -->
     <extensions defaultExtensionNs="com.intellij">
+
         <projectConfigurable
                 groupId="language"
                 id="LanguageServers"
@@ -157,6 +158,21 @@
                 factoryClass="com.redhat.devtools.lsp4ij.console.LSPConsoleToolWindowFactory"
                 canCloseContents="false"
                 icon="AllIcons.Webreferences.Server"/>
+
+    </extensions>
+
+    <!-- Launch configuration Language servers -->
+    <extensions defaultExtensionNs="com.intellij">
+
+        <applicationService
+                id="com.redhat.devtools.lsp4ij.launching.LaunchConfigurationLanguageServerSettings"
+                serviceImplementation="com.redhat.devtools.lsp4ij.launching.LaunchConfigurationLanguageServerSettings"/>
+        <applicationService
+                id="com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplateManager"
+                serviceImplementation="com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplateManager"/>
+        <applicationService
+                id="com.redhat.devtools.lsp4ij.internal.FakeLanguageManager"
+                serviceImplementation="com.redhat.devtools.lsp4ij.internal.FakeLanguageManager"/>
     </extensions>
 
     <actions resource-bundle="messages.LanguageServerBundle">

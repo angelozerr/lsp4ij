@@ -20,6 +20,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.redhat.devtools.lsp4ij.internal.StringUtils;
+import com.redhat.devtools.lsp4ij.launching.LaunchConfigurationLanguageServerSettings;
 import com.redhat.devtools.lsp4ij.operations.codelens.LSPCodelensProvider;
 import com.redhat.devtools.lsp4ij.operations.color.LSPColorProvider;
 import com.redhat.devtools.lsp4ij.operations.inlayhint.LSPInlayHintsProvider;
@@ -28,13 +29,17 @@ import com.redhat.devtools.lsp4ij.server.definition.extension.ExtensionLanguageS
 import com.redhat.devtools.lsp4ij.server.definition.extension.FileTypeMappingExtensionPointBean;
 import com.redhat.devtools.lsp4ij.server.definition.extension.LanguageMappingExtensionPointBean;
 import com.redhat.devtools.lsp4ij.server.definition.extension.ServerExtensionPointBean;
+import com.redhat.devtools.lsp4ij.server.definition.launching.LaunchingLanguageServerDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+
+import static com.redhat.devtools.lsp4ij.server.definition.extension.LanguageMappingExtensionPointBean.DEFAULT_DOCUMENT_MATCHER;
 
 /**
  * Language server registry.
@@ -55,6 +60,8 @@ public class LanguageServersRegistry {
 
     private final List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
 
+    private final Collection<LanguageServerDefinitionListener> listeners = new CopyOnWriteArrayList<>();
+
     private final List<ProviderInfo<? extends Object>> inlayHintsProviders = new ArrayList<>();
 
     private LanguageServersRegistry() {
@@ -63,6 +70,34 @@ public class LanguageServersRegistry {
 
     private void initialize() {
         List<ServerMapping> mappings = new ArrayList<>();
+
+        // Load language servers / language mappings from user settings
+        for (var launch : LaunchConfigurationLanguageServerSettings.getInstance().getLaunchConfigDefinitionSettings()) {
+            String serverId = launch.getServerId();
+            var lsDefinition = new LaunchingLanguageServerDefinition(serverId, launch.getServerName(), "", launch.getCommandLine());
+            serverDefinitions.put(launch.getServerId(), lsDefinition);
+            for (var mapping : launch.getMappings()) {
+                if (mapping != null) {
+                    String mappingLanguage = mapping.getLanguage();
+                    if (!StringUtils.isEmpty(mappingLanguage)) {
+                        Language language = Language.findLanguageByID(mappingLanguage);
+                        if (language != null) {
+                            @NotNull String languageId = StringUtils.isEmpty(mapping.getLanguageId()) ? language.getID() : mapping.getLanguageId();
+                            mappings.add(new ServerLanguageMapping(language, serverId, languageId, DEFAULT_DOCUMENT_MATCHER));
+                        }
+                    } else {
+                        String mappingFileType = mapping.getFileType();
+                        if (!StringUtils.isEmpty(mappingFileType)) {
+                            FileType fileType = FileTypeManager.getInstance().findFileTypeByName(mappingFileType);
+                            if (fileType != null) {
+                                @NotNull String languageId = StringUtils.isEmpty(mapping.getLanguageId()) ? fileType.getName() : mapping.getLanguageId();
+                                mappings.add(new ServerFileTypeMapping(fileType, serverId, languageId, DEFAULT_DOCUMENT_MATCHER));
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Load language servers from extensions point
         for (ServerExtensionPointBean server : ServerExtensionPointBean.EP_NAME.getExtensions()) {
@@ -97,12 +132,16 @@ public class LanguageServersRegistry {
             }
         }
 
+        updateInlayHintsProviders();
+    }
+
+    private void updateInlayHintsProviders() {
         // register LSPInlayHintInlayHintsProvider + LSPCodelensInlayHintsProvider automatically for all languages
         // which are associated with a language server.
-        Set<Language> distinctLanguages = mappings
+        Set<Language> distinctLanguages = connections
                 .stream()
-                .filter(mapping -> mapping instanceof ServerLanguageMapping)
-                .map(mapping -> ((ServerLanguageMapping) mapping).getLanguage())
+                .map(ContentTypeToLanguageServerDefinition::getLanguage)
+                .filter(language -> language != null)
                 .collect(Collectors.toSet());
         // When a file is not linked to a language (just with a file type),
         // the language received in InlayHintProviders is plain/text, we add it to support
@@ -147,6 +186,11 @@ public class LanguageServersRegistry {
                 .collect(Collectors.toList());
     }
 
+    public List<ContentTypeToLanguageServerDefinition> findLanguageServerDefinitionFor(final @NotNull String serverId) {
+        return connections.stream()
+                .filter(mapping -> serverId.equals(mapping.getServerDefinition().id))
+                .collect(Collectors.toList());
+    }
 
     public void registerAssociation(@NotNull LanguageServerDefinition serverDefinition, @NotNull ServerMapping mapping) {
         if (mapping instanceof ServerLanguageMapping languageMapping) {
@@ -179,6 +223,38 @@ public class LanguageServersRegistry {
      */
     public Collection<LanguageServerDefinition> getServerDefinitions() {
         return serverDefinitions.values();
+    }
+
+    public void addServerDefinition(LanguageServerDefinition definition) {
+        serverDefinitions.put(definition.id, definition);
+        updateInlayHintsProviders();
+        for (LanguageServerDefinitionListener listener : this.listeners) {
+            try {
+                listener.handleAdded(definition);
+            } catch (Exception e) {
+                LOGGER.error("Error while server definition is added of the language server '" + definition.id + "'", e);
+            }
+        }
+    }
+
+    public void removeServerDefinition(LanguageServerDefinition definition) {
+        serverDefinitions.remove(definition.id);
+        updateInlayHintsProviders();
+        for (LanguageServerDefinitionListener listener : this.listeners) {
+            try {
+                listener.handleRemoved(definition);
+            } catch (Exception e) {
+                LOGGER.error("Error while server definition is added of the language server '" + definition.id + "'", e);
+            }
+        }
+    }
+
+    public void addLanguageServerDefinitionListener(LanguageServerDefinitionListener listener) {
+        this.listeners.add(listener);
+    }
+
+    public void removeLanguageServerDefinitionListener(LanguageServerDefinitionListener listener) {
+        this.listeners.remove(listener);
     }
 
     /**
@@ -225,4 +301,3 @@ public class LanguageServersRegistry {
     }
 
 }
-
