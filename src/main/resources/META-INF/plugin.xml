@@ -214,6 +214,17 @@
                 language="TEXT"
                 implementationClass="com.redhat.devtools.lsp4ij.operations.signatureHelp.LSPParameterInfoHandler"/>
 
+        <!-- LSP textDocument/rename request support -->
+        <renameHandler
+                id="LSPRenameHandler"
+                implementation="com.redhat.devtools.lsp4ij.operations.rename.LSPRenameHandler"
+                order="first"/>
+
+        <renamePsiElementProcessor
+                id="LSPRenameProcessor"
+                implementation="com.redhat.devtools.lsp4ij.operations.rename.LSPRenameProcessor"
+                order="first"/>
+
         <codeInsight.parameterInfo
                 id="LSPParameterInfoHandlerForTextMate"
                 language="textmate"
