@@ -1,4 +1,12 @@
 {
+  "fileTypes": [
+    {
+      "id": "LESS",
+      "patterns": [
+        "*.less"
+      ]
+    }
+  ],
   "languageServers": [
     {
       "name": "CSS Language Server",
@@ -24,6 +32,10 @@
         {
           "fileType": "CSS",
           "languageId": "css"
+        },
+        {
+          "fileType": "LESS",
+          "languageId": "less"
         }
       ]
     },

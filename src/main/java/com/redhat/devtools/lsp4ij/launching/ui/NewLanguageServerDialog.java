@@ -10,9 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.launching.ui;
 
+import com.intellij.ide.highlighter.custom.SyntaxTable;
 import com.intellij.lang.Language;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypeManager;
+import com.intellij.openapi.fileTypes.impl.AbstractFileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
@@ -134,6 +136,16 @@ public class NewLanguageServerDialog extends DialogWrapper {
         serverName.setText(template.getName() != null ? template.getName() : "");
         String command = getCommandLine(template);
         commandLine.setText(command);
+
+        for(var mapping : template.getFileTypeMappings()) {
+            String name = mapping.getFileType();
+            if (FileTypeManager.getInstance().findFileTypeByName(name) == null) {
+                AbstractFileType type = new AbstractFileType(new SyntaxTable());
+                type.setName(name);
+                FileTypeManager.getInstance().registerFileType(type);
+            }
+        }
+
         // Update mappings
         languageMappingsPanel.refresh(template.getLanguageMappings());
         fileTypeMappingsPanel.refresh(template.getFileTypeMappings());
