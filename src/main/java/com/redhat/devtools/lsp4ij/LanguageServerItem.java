@@ -157,6 +157,29 @@ public class LanguageServerItem {
         return isDocumentRangeFormattingSupported(getServerCapabilities());
     }
 
+    public boolean isCodeActionSupported() {
+        return isCodeActionSupported(getServerCapabilities());
+    }
+
+    /**
+     * Returns true if the language server can support code action and false otherwise.
+     *
+     * @param serverCapabilities the server capabilities.
+     * @return true if the language server can support code action and false otherwise.
+     */
+    public static boolean isCodeActionSupported(@Nullable ServerCapabilities serverCapabilities) {
+        if (serverCapabilities != null) {
+            Either<Boolean, CodeActionOptions> caProvider = serverCapabilities.getCodeActionProvider();
+            if (caProvider.isLeft()) {
+                return caProvider.getLeft();
+            } else if (caProvider.isRight()) {
+                CodeActionOptions options = caProvider.getRight();
+                return options != null;
+            }
+        }
+        return false;
+    }
+
     /**
      * Returns true if the language server can support resolve code action and false otherwise.
      *

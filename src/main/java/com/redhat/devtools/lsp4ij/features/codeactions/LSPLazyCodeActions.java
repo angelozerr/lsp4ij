@@ -120,6 +120,9 @@ public class LSPLazyCodeActions {
                 .computeAsyncCompose(cancelChecker -> languageServerWrapper
                         .getInitializedServer()
                         .thenCompose(ls -> {
+                           /* if (!ls.isCodeActionSupported())  {
+                                return null;
+                            }*/
                             // Language server is initialized here
                             cancelChecker.checkCanceled();
 

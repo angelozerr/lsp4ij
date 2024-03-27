@@ -13,6 +13,7 @@ package com.redhat.devtools.lsp4ij;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Key;
 import com.intellij.psi.PsiFile;
+import com.redhat.devtools.lsp4ij.features.codeactions.LSPRefactoringCodeActionSupport;
 import com.redhat.devtools.lsp4ij.features.codelens.LSPCodeLensSupport;
 import com.redhat.devtools.lsp4ij.features.color.LSPColorSupport;
 import com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkSupport;
@@ -50,6 +51,8 @@ public class LSPFileSupport implements Disposable {
     private final LSPDocumentLinkSupport documentLinkSupport;
 
     private final LSPHoverSupport hoverSupport;
+    private final LSPRefactoringCodeActionSupport refactoringCodeActionSupport;
+
     private LSPFileSupport(@NotNull PsiFile file) {
         this.file = file;
         this.codeLensSupport = new LSPCodeLensSupport(file);
@@ -61,6 +64,7 @@ public class LSPFileSupport implements Disposable {
         this.signatureHelpSupport = new LSPSignatureHelpSupport(file);
         this.documentLinkSupport = new LSPDocumentLinkSupport(file);
         this.hoverSupport = new LSPHoverSupport(file);
+        this.refactoringCodeActionSupport = new LSPRefactoringCodeActionSupport(file);
         file.putUserData(LSP_FILE_SUPPORT_KEY, this);
     }
 
@@ -77,6 +81,7 @@ public class LSPFileSupport implements Disposable {
         getSignatureHelpSupport().cancel();
         getDocumentLinkSupport().cancel();
         getHoverSupport().cancel();
+        getRefactoringCodeActionSupport().cancel();
     }
 
     /**
@@ -160,6 +165,14 @@ public class LSPFileSupport implements Disposable {
         return hoverSupport;
     }
 
+    /**
+     * Returns the LSP code action support used for refactoring.
+     *
+     * @return the LSP code action support used for refactoring.
+     */
+    public LSPRefactoringCodeActionSupport getRefactoringCodeActionSupport() {
+        return refactoringCodeActionSupport;
+    }
     /**
      * Return the existing LSP file support for the given Psi file, or create a new one if necessary.
      *

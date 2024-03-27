@@ -175,9 +175,9 @@
 
         <!-- LSP textDocument/codeLens request support -->
         <codeInsight.codeVisionProviderFactory
-                implementation="com.redhat.devtools.lsp4ij.features.codelens.DummyCodeVisionProviderFactory" />
+                implementation="com.redhat.devtools.lsp4ij.features.codelens.DummyCodeVisionProviderFactory"/>
         <config.codeVisionGroupSettingProvider
-            implementation="com.redhat.devtools.lsp4ij.features.codelens.LSPCodeLensSettingsProvider" />
+                implementation="com.redhat.devtools.lsp4ij.features.codelens.LSPCodeLensSettingsProvider"/>
         <codeInsight.codeVisionProvider
                 id="LSPCodeLensProvider"
                 implementation="com.redhat.devtools.lsp4ij.features.codelens.LSPCodeLensProvider"/>
@@ -255,6 +255,15 @@
                 displayType="BALLOON"
                 hideFromSettings="true"/>
     </extensions>
+
+    <!-- Add LSP Refactorings menu group-->
+    <actions>
+        <group id="LSPRefactoringMenuGroup"
+               class="com.redhat.devtools.lsp4ij.features.codeactions.LSPRefactoringMenuGroup"
+               popup="true">
+            <add-to-group group-id="RefactoringMenu" anchor="last"/>
+        </group>
+    </actions>
 
     <!-- Common LSP Client actions  -->
     <actions>
