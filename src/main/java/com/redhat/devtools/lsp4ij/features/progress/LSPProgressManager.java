@@ -22,6 +22,8 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,10 +40,12 @@ public class LSPProgressManager implements Disposable {
     private LanguageServer languageServer;
     private LanguageServerWrapper languageServerWrapper;
     private boolean disposed;
+    private List<ProgressParams> pendingProgressParams;
 
     public LSPProgressManager() {
         // Map which contains current progresses stored by their token.
         this.progressMap = new ConcurrentHashMap<>();
+        this.pendingProgressParams = new ArrayList<>();
     }
 
     public void connect(final LanguageServer languageServer, LanguageServerWrapper languageServerWrapper) {
@@ -62,9 +66,19 @@ public class LSPProgressManager implements Disposable {
             LSPProgressInfo progress = progressMap.get(token);
             if (progress != null) {
                 // An LSP progress already exists with this token, cancel it.
-                progress.cancel();
+            //    progress.cancel();
             }
-            progressMap.put(token, new LSPProgressInfo(token));
+            progress = new LSPProgressInfo(token);
+            if(!pendingProgressParams.isEmpty()) {
+                synchronized (pendingProgressParams) {
+                    List<ProgressParams> current = new ArrayList(pendingProgressParams);
+                    for (var c : current) {
+                        notifyProgress(c, progress);
+                    }
+                    pendingProgressParams.removeAll(current);
+                }
+            }
+            progressMap.put(token, progress);
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -162,8 +176,15 @@ public class LSPProgressManager implements Disposable {
         }
         String token = getToken(params.getToken());
         LSPProgressInfo progress = progressMap.get(token);
+        notifyProgress(params, progress);
+    }
+
+    private void notifyProgress(@NotNull ProgressParams params, LSPProgressInfo progress) {
         if (progress == null) {
-            // may happen if the server does not wait on the return value of the future of createProgress
+            synchronized (pendingProgressParams) {
+                // may happen if the server does not wait on the return value of the future of createProgress
+                pendingProgressParams.add(params);
+            }
             return;
         }
         var value = params.getValue();
