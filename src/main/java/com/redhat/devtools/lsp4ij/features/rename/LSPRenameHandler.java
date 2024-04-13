@@ -12,9 +12,11 @@ package com.redhat.devtools.lsp4ij.features.rename;
 
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -23,11 +25,17 @@ import com.redhat.devtools.lsp4ij.LSPFileSupport;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServerItem;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
+import com.redhat.devtools.lsp4ij.features.refactoring.WorkspaceEditData;
+import com.redhat.devtools.lsp4ij.internal.CompletableFutures;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class LSPRenameHandler implements RenameHandler {
@@ -61,12 +69,53 @@ public class LSPRenameHandler implements RenameHandler {
                         // Create rename parameters
                         RenameParamsContext renameParams = createRenameParams(prepareRenamesResult, textDocument, position);
 
-                        // Open the LSP rename dialog
-                        LSPRenameRefactoringDialog dialog = new LSPRenameRefactoringDialog(renameParams, lspFileSupport.getRenameSupport(), editor, project);
-                        dialog.show();
+                      //  if (isInplaceRenameAvailable(editor)) {
+                        if (true) {
+
+                            CompletableFuture<List<WorkspaceEditData>> workspaceEditsFuture = lspFileSupport.getRenameSupport().getRename(renameParams);
+
+                            try {
+                                CompletableFutures.waitUntilDone(workspaceEditsFuture);
+                            } catch (ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
+
+                            if (CompletableFutures.isDoneNormally(workspaceEditsFuture)) {
+                                List<WorkspaceEditData> workspaceEdits = workspaceEditsFuture.getNow(Collections.emptyList());
+                                if (!workspaceEdits.isEmpty()) {
+                                    @NotNull List<TextRange> textRanges = toTextRanges(workspaceEdits, textDocument.getUri(), document);
+                  //                  textRanges.add(0, prepareRenamesResult.get(0).range());
+                                    WriteCommandAction.runWriteCommandAction(project, () -> {
+                                        LSPInplaceRenamer.rename(editor, psiFile, textRanges);
+                                    });
+                                }
+                            }
+                        } else {
+                            // Open the LSP rename dialog
+                            LSPRenameRefactoringDialog dialog = new LSPRenameRefactoringDialog(renameParams, lspFileSupport.getRenameSupport(), editor, project);
+                            dialog.show();
+                        }
                     }
                     return null;
                 });
+    }
+
+    private List<TextRange> toTextRanges(List<WorkspaceEditData> workspaceEdits, String uri, Document document) {
+        List<TextRange> ranges =new ArrayList<>();
+        var edit = workspaceEdits.get(0).edit();
+        var changes = edit.getChanges();
+        if(changes != null && !changes.isEmpty()) {
+            for(var entry : changes.entrySet()) {
+                //if (uri.equals(entry.getKey())) {
+                    entry.getValue()
+                            .forEach(te -> {
+                                ranges.add(LSPIJUtils.toTextRange(te.getRange(), document));
+                            });
+
+                //}
+            }
+        }
+        return ranges;
     }
 
     @NotNull
@@ -81,6 +130,11 @@ public class LSPRenameHandler implements RenameHandler {
         renameParams.setNewName(placeholder);
         return renameParams;
     }
+
+    private static boolean isInplaceRenameAvailable(final Editor editor) {
+        return editor.getSettings().isVariableInplaceRenameEnabled();
+    }
+
 
     @Override
     public void invoke(@NotNull Project project, PsiElement @NotNull [] elements, DataContext dataContext) {

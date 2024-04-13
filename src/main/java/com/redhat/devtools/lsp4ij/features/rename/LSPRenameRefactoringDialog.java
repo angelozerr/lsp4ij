@@ -141,11 +141,13 @@ class LSPRenameRefactoringDialog extends RefactoringDialog {
 
         if (CompletableFutures.isDoneNormally(workspaceEditsFuture)) {
             List<WorkspaceEditData> workspaceEdits = workspaceEditsFuture.getNow(Collections.emptyList());
-            WriteCommandAction.runWriteCommandAction(project, () -> {
-                workspaceEdits.forEach(workspaceEditData -> {
-                    LSPIJUtils.applyWorkspaceEdit(workspaceEditData.edit());
+            if (!workspaceEdits.isEmpty()) {
+                WriteCommandAction.runWriteCommandAction(project, () -> {
+                    workspaceEdits.forEach(workspaceEditData -> {
+                        LSPIJUtils.applyWorkspaceEdit(workspaceEditData.edit());
+                    });
                 });
-            });
+            }
         }
     }
 
