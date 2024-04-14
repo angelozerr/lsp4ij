@@ -155,9 +155,10 @@
                 order="first"/>
 
         <!-- LSP textDocument/definition request support -->
-        <gotoDeclarationHandler
+        <!--<gotoDeclarationHandler
                 id="LSPGotoDeclarationHandler"
-                implementation="com.redhat.devtools.lsp4ij.features.navigation.LSPGotoDeclarationHandler"/>
+                implementation="com.redhat.devtools.lsp4ij.features.navigation.LSPGotoDeclarationHandler"/>-->
+        <psi.declarationProvider implementation="com.redhat.devtools.lsp4ij.features.definition.LSPDefinitionProvider" />
 
         <!-- LSP textDocument/documentLink request support -->
         <externalAnnotator
