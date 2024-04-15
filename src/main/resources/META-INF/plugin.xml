@@ -247,6 +247,10 @@
         <usageTypeProvider
                 implementation="com.redhat.devtools.lsp4ij.usages.LSPUsageTypeProvider"/>
 
+        <!-- LSP textDocument/linkedEditingRange request support -->
+        <editorFactoryListener
+                implementation="com.redhat.devtools.lsp4ij.features.linkedEditingRange.LSPLinkedEditingRangeSynchronizer$MyEditorFactoryListener" />
+
         <!-- LSP textDocument/rename request support -->
         <renameHandler
                 id="LSPRenameHandler"

@@ -22,6 +22,7 @@ import com.redhat.devtools.lsp4ij.features.foldingRange.LSPFoldingRangeSupport;
 import com.redhat.devtools.lsp4ij.features.formatting.LSPFormattingSupport;
 import com.redhat.devtools.lsp4ij.features.highlight.LSPHighlightSupport;
 import com.redhat.devtools.lsp4ij.features.inlayhint.LSPInlayHintsSupport;
+import com.redhat.devtools.lsp4ij.features.linkedEditingRange.LSPLinkedEditingRangeSupport;
 import com.redhat.devtools.lsp4ij.features.rename.LSPPrepareRenameSupport;
 import com.redhat.devtools.lsp4ij.features.rename.LSPRenameSupport;
 import com.redhat.devtools.lsp4ij.features.signatureHelp.LSPSignatureHelpSupport;
@@ -60,6 +61,8 @@ public class LSPFileSupport implements Disposable {
 
     private final LSPRenameSupport renameSupport;
 
+    private final LSPLinkedEditingRangeSupport linkedEditingRangeSupport;
+
     private LSPFileSupport(@NotNull PsiFile file) {
         this.file = file;
         this.codeLensSupport = new LSPCodeLensSupport(file);
@@ -74,6 +77,7 @@ public class LSPFileSupport implements Disposable {
         this.intentionCodeActionSupport = new LSPIntentionCodeActionSupport(file);
         this.prepareRenameSupport = new LSPPrepareRenameSupport(file);
         this.renameSupport = new LSPRenameSupport(file);
+        this.linkedEditingRangeSupport = new LSPLinkedEditingRangeSupport(file);
         file.putUserData(LSP_FILE_SUPPORT_KEY, this);
     }
 
@@ -93,6 +97,7 @@ public class LSPFileSupport implements Disposable {
         getIntentionCodeActionSupport().cancel();
         getPrepareRenameSupport().cancel();
         getRenameSupport().cancel();
+        getLinkedEditingRangeSupport().cancel();
     }
 
     /**
@@ -195,14 +200,22 @@ public class LSPFileSupport implements Disposable {
     }
 
     /**
-     * Returns the LSP prepare rename support.
+     * Returns the LSP rename support.
      *
-     * @return the LSP prepare rename support.
+     * @return the LSP rename support.
      */
     public LSPRenameSupport getRenameSupport() {
         return renameSupport;
     }
 
+    /**
+     * Returns the LSP linked editing range support.
+     *
+     * @return the LSP linked editing range support.
+     */
+    public LSPLinkedEditingRangeSupport getLinkedEditingRangeSupport() {
+        return linkedEditingRangeSupport;
+    }
 
     /**
      * Return the existing LSP file support for the given Psi file, or create a new one if necessary.

@@ -442,6 +442,17 @@ public class LanguageServerItem {
         return false;
     }
 
+    /**
+     * Returns true if the language server can support linked editing range and false otherwise.
+     *
+     * @param serverCapabilities the server capabilities.
+     * @return true if the language server can support linked editing range and false otherwise.
+     */
+    public static boolean isLinkedEditingRangesSupported(@Nullable ServerCapabilities serverCapabilities) {
+        return serverCapabilities != null &&
+                hasCapability(serverCapabilities.getLinkedEditingRangeProvider());
+    }
+
     public boolean isWillRenameFilesSupported(PsiFile file) {
         return serverWrapper.isWillRenameFilesSupported(file);
     }
@@ -481,4 +492,5 @@ public class LanguageServerItem {
     private static boolean hasCapability(Boolean capability) {
         return capability != null && capability;
     }
+
 }

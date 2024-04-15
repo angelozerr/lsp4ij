@@ -136,6 +136,10 @@ public class SupportedFeatures {
         renameCapabilities.setPrepareSupport(true);
         textDocumentClientCapabilities.setRename(renameCapabilities);
 
+        // textDocument/linkedEditingRange support
+        var linkedEditingRangeCapabilities =new LinkedEditingRangeCapabilities();
+        textDocumentClientCapabilities.setLinkedEditingRange(linkedEditingRangeCapabilities);
+
         // Synchronization support
         textDocumentClientCapabilities
                 .setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
@@ -143,6 +147,8 @@ public class SupportedFeatures {
         // TODO
         // SelectionRangeCapabilities selectionRange = new SelectionRangeCapabilities();
         // textDocumentClientCapabilities.setSelectionRange(selectionRange);
+
+
         return textDocumentClientCapabilities;
     }
 
