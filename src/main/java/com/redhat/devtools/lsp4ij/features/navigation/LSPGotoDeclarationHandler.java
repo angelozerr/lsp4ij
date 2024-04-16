@@ -40,6 +40,8 @@ import static com.redhat.devtools.lsp4ij.features.LSPPsiElementFactory.toPsiElem
 public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(LSPGotoDeclarationHandler.class);
 
+    public static Either<List<? extends Location>, List<? extends LocationLink>> definitionsContext;
+
     @Nullable
     @Override
     public PsiElement[] getGotoDeclarationTargets(@Nullable PsiElement sourceElement, int offset, Editor editor) {
@@ -85,6 +87,7 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
     }
 
     private static List<LSPPsiElement> toElements(Project project, Either<List<? extends Location>, List<? extends LocationLink>> definitions) {
+        definitionsContext = definitions;
         if (definitions == null) {
             return Collections.emptyList();
         }

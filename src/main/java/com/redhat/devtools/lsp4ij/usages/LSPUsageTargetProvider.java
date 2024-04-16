@@ -11,8 +11,10 @@
 package com.redhat.devtools.lsp4ij.usages;
 
 import com.intellij.find.findUsages.PsiElement2UsageTargetAdapter;
+import com.intellij.openapi.actionSystem.IdeActions;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.impl.EditorLastActionTracker;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -33,6 +35,9 @@ public class LSPUsageTargetProvider implements UsageTargetProvider {
 
     @Override
     public UsageTarget @Nullable [] getTargets(@NotNull Editor editor, @NotNull PsiFile file) {
+        if (EditorLastActionTracker.getInstance().getLastActionId() != IdeActions.ACTION_FIND_USAGES) {
+            return null;
+        }
         if (!SimpleLanguageUtils.isSupported(file.getLanguage())) {
             return null;
         }
