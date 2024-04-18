@@ -10,6 +10,7 @@
  *
  * Contributors:
  *     Red Hat Inc. - initial API and implementation
+ *     Mitja Leino <mitja.leino@hotmail.com> - Implement DialogWrapper for validations
  *******************************************************************************/
 package com.redhat.devtools.lsp4ij.settings;
 
@@ -94,7 +95,8 @@ public class LanguageServerView extends DialogWrapper implements Disposable {
      * @return
      */
     public boolean isValid() {
-        return this.languageServerPanel.getCommandLine().getValidationInfo() == null;
+        return this.languageServerPanel.getCommandLine().isValid()
+                && this.languageServerPanel.getServerName().isValid();
     }
 
     /**
@@ -420,6 +422,7 @@ public class LanguageServerView extends DialogWrapper implements Disposable {
 
     @Override
     protected @Nullable ValidationInfo doValidate() {
+        // Server name is not editable for existing language server
         return this.languageServerPanel.getCommandLine().getValidationInfo();
     }
 
