@@ -27,7 +27,7 @@ import java.util.List;
  * Command line widget used to fill the command to start a language
  * server when creating a new or modifying an existing LS configuration
  */
-public class CommandLineWidget extends JBTextArea implements ValidatableConsoleWidget {
+public class CommandLineWidget extends JBTextArea implements ValidatableWidget {
     private final String errorMessage = LanguageServerBundle.message("new.language.server.dialog.validation.commandLine.must.be.set");
     private final transient Border normalBorder;
 

@@ -23,7 +23,7 @@ import java.awt.*;
  * A shared interface meant to simplify creating validatable components used in
  * NewLanguageServerDialog and LanguageServerView (LSP console)
  */
-public interface ValidatableConsoleWidget {
+public interface ValidatableWidget {
     /**
      * Set a common error border for the widget
      * @param jComponent interface implementor (e.g. setErrorBorder(this);)

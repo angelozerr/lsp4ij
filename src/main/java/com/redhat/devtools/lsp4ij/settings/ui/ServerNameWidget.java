@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Server name widget that contains the server name when creating a new LS configuration
  */
-public class ServerNameWidget extends JBTextField implements ValidatableConsoleWidget {
+public class ServerNameWidget extends JBTextField implements ValidatableWidget {
     private final String errorMessage = LanguageServerBundle.message("new.language.server.dialog.validation.serverName.must.be.set");
     private final transient Border originalBorder;
 
