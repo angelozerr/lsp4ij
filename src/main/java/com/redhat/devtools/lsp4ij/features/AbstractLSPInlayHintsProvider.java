@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.features;
 
-import com.intellij.codeInsight.hints.*;
+import com.intellij.codeInsight.hints.declarative.*;
 import com.intellij.codeInsight.hints.presentation.PresentationFactory;
 import com.intellij.lang.Language;
 import com.intellij.openapi.editor.Editor;
@@ -40,15 +40,48 @@ import static com.redhat.devtools.lsp4ij.internal.InlayHintsFactoryBridge.refres
 /*
  * Abstract class used to display IntelliJ inlay hints.
  */
-public abstract class AbstractLSPInlayHintsProvider implements InlayHintsProvider<NoSettings> {
+public abstract class AbstractLSPInlayHintsProvider implements InlayHintsProvider {
 
-    private static final InlayHintsCollector EMPTY_INLAY_HINTS_COLLECTOR = (psiElement, editor, inlayHintsSink) -> {
-        // Do nothing
-        return true;
-    };
-
-    private final SettingsKey<NoSettings> key = new SettingsKey<>("LSP.hints");
-
+    @Nullable
+    @Override
+    public InlayHintsCollector createCollector(@NotNull PsiFile psiFile, @NotNull Editor editor) {
+        if (!LanguageServersRegistry.getInstance().isFileSupported(psiFile)) {
+            return null;
+        }
+        final long modificationStamp = psiFile.getModificationStamp();
+        return new OwnBypassCollector() {
+            @Override
+            public void collectHintsForFile(@NotNull PsiFile psiFile, @NotNull InlayTreeSink inlayTreeSink) {
+                Project project = psiFile.getProject();
+                if (project.isDisposed()) {
+                    // InlayHint must not be collected
+                    return;
+                }
+                try {
+                    final List<CompletableFuture> pendingFutures = new ArrayList<>();
+                    doCollect(psiFile, editor, getFactory(), inlayTreeSink, pendingFutures);
+                    if (!pendingFutures.isEmpty()) {
+                        // Some LSP requests:
+                        // - textDocument/codeLens, codeLens/resolve
+                        // - textDocument/inlayHint, inlayHint/resolve
+                        // - textDocument/colorInformation
+                        // are pending, wait for their completion and refresh the inlay hints UI to render them
+                        CompletableFuture.allOf(pendingFutures.toArray(new CompletableFuture[0]))
+                                .thenApplyAsync(_unused -> {
+                                    // Check if PsiFile was not modified
+                                    if (modificationStamp == psiFile.getModificationStamp()) {
+                                        // All pending futures are finished, refresh the inlay hints
+                                        refreshInlayHints(psiFile, new Editor[]{editor}, false);
+                                    }
+                                    return null;
+                                });
+                    }
+                } catch (CancellationException e) {
+                    // Do nothing
+                }
+            }
+        };
+    }
 
     @Nullable
     @Override

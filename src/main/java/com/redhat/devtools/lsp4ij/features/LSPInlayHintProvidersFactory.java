@@ -10,14 +10,17 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.features;
 
-import com.intellij.codeInsight.hints.InlayHintsProviderFactory;
-import com.intellij.codeInsight.hints.ProviderInfo;
+import com.intellij.codeInsight.hints.declarative.InlayHintsProviderFactory;
+import com.intellij.codeInsight.hints.declarative.InlayProviderInfo;
+import com.intellij.lang.Language;
 import com.intellij.openapi.project.Project;
 import com.redhat.devtools.lsp4ij.LanguageServersRegistry;
 import com.redhat.devtools.lsp4ij.features.inlayhint.LSPInlayHintsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * {@link InlayHintsProviderFactory inlay hint factory} implementation
@@ -25,15 +28,22 @@ import java.util.List;
  * to avoid for the external plugin to declare in plugin.xml the 'codeInsight.inlayProvider'.
  */
 public class LSPInlayHintProvidersFactory implements InlayHintsProviderFactory {
-    @NotNull
+
+    @Nullable
     @Override
-    public List<ProviderInfo<? extends Object>> getProvidersInfo() {
-        return LanguageServersRegistry.getInstance().getInlayHintProviderInfos();
+    public InlayProviderInfo getProviderInfo(@NotNull Language language, @NotNull String s) {
+        return null;
     }
 
     @NotNull
     @Override
-    public List<ProviderInfo<? extends Object>> getProvidersInfo(@NotNull Project project) {
-        return getProvidersInfo();
+    public List<InlayProviderInfo> getProvidersForLanguage(@NotNull Language language) {
+        return List.of();
+    }
+
+    @NotNull
+    @Override
+    public Set<Language> getSupportedLanguages() {
+        return LanguageServersRegistry.getInstance();
     }
 }
