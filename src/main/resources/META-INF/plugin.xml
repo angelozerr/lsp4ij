@@ -210,9 +210,10 @@
                 order="first"/>
 
         <!-- LSP textDocument/definition request support -->
+        <psi.implicitReferenceProvider implementation="com.redhat.devtools.lsp4ij.features.definition.LSPImplicitReferenceProvider"/>
         <gotoDeclarationHandler
                 id="LSPGotoDeclarationHandler"
-                implementation="com.redhat.devtools.lsp4ij.features.navigation.LSPGotoDeclarationHandler"/>
+                implementation="com.redhat.devtools.lsp4ij.features.definition.LSPGotoDeclarationHandler"/>
 
         <!-- LSP textDocument/documentLink request support -->
         <externalAnnotator

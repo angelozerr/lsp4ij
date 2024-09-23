@@ -8,10 +8,9 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.lsp4ij.features.navigation;
+package com.redhat.devtools.lsp4ij.features.definition;
 
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProcessCanceledException;
@@ -23,14 +22,11 @@ import com.redhat.devtools.lsp4ij.LSPFileSupport;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServersRegistry;
 import com.redhat.devtools.lsp4ij.features.LSPPsiElement;
-import com.redhat.devtools.lsp4ij.features.definition.LSPDefinitionParams;
-import com.redhat.devtools.lsp4ij.features.definition.LSPDefinitionSupport;
 import com.redhat.devtools.lsp4ij.features.references.LSPReferenceParams;
 import com.redhat.devtools.lsp4ij.features.references.LSPReferenceSupport;
 import com.redhat.devtools.lsp4ij.usages.LSPUsageType;
 import com.redhat.devtools.lsp4ij.usages.LSPUsagesManager;
 import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.util.Ranges;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +42,7 @@ import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.isDoneNorma
 import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.waitUntilDone;
 
 public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LSPGotoDeclarationHandler.class);
 
     @Nullable
@@ -63,7 +60,7 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
         
         LSPDefinitionSupport definitionSupport = LSPFileSupport.getSupport(psiFile).getDefinitionSupport();
         var params = new LSPDefinitionParams(LSPIJUtils.toTextDocumentIdentifier(file), LSPIJUtils.toPosition(offset, document), offset);
-        CompletableFuture<List<Location>> definitionsFuture = definitionSupport.getDefinitions(params);
+        CompletableFuture<List<DefinitionData>> definitionsFuture = definitionSupport.getDefinitions(params);
         try {
             waitUntilDone(definitionsFuture, psiFile);
         } catch (ProcessCanceledException ex) {
@@ -78,9 +75,9 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
 
         if (isDoneNormally(definitionsFuture)) {
             // textDocument/definition has been collected correctly
-            List<Location> definitions = definitionsFuture.getNow(null);
+            List<DefinitionData> definitions = definitionsFuture.getNow(null);
             if (definitions != null && !definitions.isEmpty()) {
-                if (definitions.size() == 1) {
+                /*if (definitions.size() == 1) {
                     Location location = definitions.get(0);
                     if (LSPIJUtils.findResourceFor(location.getUri()).equals(file)
                      && Ranges.containsPosition(location.getRange(), params.getPosition())  ) {
@@ -89,11 +86,11 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
                         });
                         return PsiElement.EMPTY_ARRAY;
                     }
-                }
+                }*/
                 Project project = editor.getProject();
                 List<LSPPsiElement> targets = definitions
                         .stream()
-                        .map(location -> toPsiElement(location, project))
+                        .map(location -> toPsiElement(location.location(), project))
                         .filter(Objects::nonNull)
                         .toList();
                 return targets.toArray(new PsiElement[targets.size()]);
