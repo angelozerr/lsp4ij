@@ -51,7 +51,7 @@ public class LSPIntentionCodeActionSupport extends AbstractLSPDocumentFeatureSup
             super.cancel();
         }
         previousParams = params;
-        return super.getFeatureData(params);
+        return CompletableFuture.completedFuture(Collections.emptyList()); //super.getFeatureData(params);
     }
 
     @Override
@@ -141,5 +141,10 @@ public class LSPIntentionCodeActionSupport extends AbstractLSPDocumentFeatureSup
             return !CodeActionKind.QuickFix.equals(codeAction.getRight().getKind());
         }
         return true;
+    }
+
+    @Override
+    public void clear() {
+        super.cancel();
     }
 }
