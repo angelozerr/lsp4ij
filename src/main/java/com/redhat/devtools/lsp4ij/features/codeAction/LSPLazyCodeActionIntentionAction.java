@@ -33,6 +33,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.redhat.devtools.lsp4ij.LanguageServerItem.isCodeActionResolveSupported;
 
 /**
@@ -50,6 +52,7 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
     private String title;
     private Command command;
     private String familyName;
+    private boolean availabe;
 
     public LSPLazyCodeActionIntentionAction(int index) {
         this.index = index;
@@ -59,6 +62,7 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
     public void setLazyCodeActions(LSPLazyCodeActionProvider lazyCodeActions) {
         action = null;
         this.lazyCodeActions = lazyCodeActions;
+        availabe = true;
     }
 
     @Override
@@ -75,12 +79,22 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
+        if (!availabe) {
+            return false;
+        }
         loadCodeActionIfNeeded();
         return isValidCodeAction();
     }
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+        availabe = false;
+
+        title = null;
+        familyName = "null";
+//        codeAction=null;
+ //       this.command=null;
+  //      lazyCodeActions.clear();
         var languageServer = getLanguageServer();
         if (codeAction != null) {
             if (codeAction.getEdit() == null && codeAction.getCommand() == null
@@ -122,11 +136,19 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
         }
     }
 
-    private static void executeCommand(@NotNull Command command,
+    private void executeCommand(@NotNull Command command,
                                 @NotNull PsiFile file,
                                 @NotNull Editor editor,
                                 @NotNull LanguageServerItem languageServer) {
-        CommandExecutor.executeCommand(new LSPCommandContext(command, file, LSPCommandContext.ExecutedBy.CODE_ACTION, editor, languageServer));
+        try {
+            CommandExecutor.executeCommand(new LSPCommandContext(command, file, LSPCommandContext.ExecutedBy.CODE_ACTION, editor, languageServer))
+                    .response().get(1000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            //throw new RuntimeException(e);
+        }
+        //lazyCodeActions.clear();
+
+
     }
 
     private LanguageServerItem getLanguageServer() {
@@ -144,6 +166,9 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
         }
         if (action != null) {
             // The LSP code action has been already loaded.
+            return;
+        }
+        if (!availabe) {
             return;
         }
         // Try to get the LSP code action from the given index

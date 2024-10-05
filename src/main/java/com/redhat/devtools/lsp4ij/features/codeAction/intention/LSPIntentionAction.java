@@ -41,10 +41,10 @@ public abstract class LSPIntentionAction extends LSPLazyCodeActionIntentionActio
             return false;
         }
         LSPIntentionCodeActionSupport intentionCodeActionSupport = LSPFileSupport.getSupport(file).getIntentionCodeActionSupport();
-        super.setLazyCodeActions(intentionCodeActionSupport);
+        //super.setLazyCodeActions(intentionCodeActionSupport);
         CodeActionParams params = createCodeActionParams(editor, file);
-        intentionCodeActionSupport.getCodeActions(params);
-        return super.isAvailable(project, editor, file);
+        //intentionCodeActionSupport.getCodeActions(params);
+        return false; //super.isAvailable(project, editor, file);
     }
 
     /**

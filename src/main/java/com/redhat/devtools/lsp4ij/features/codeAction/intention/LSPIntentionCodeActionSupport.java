@@ -126,6 +126,11 @@ public class LSPIntentionCodeActionSupport extends AbstractLSPDocumentFeatureSup
         return null;
     }
 
+    @Override
+    public void clear() {
+        cancel();
+    }
+
     /**
      * Returns true if the given code action is valid and false otherwise.
      *
