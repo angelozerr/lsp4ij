@@ -16,7 +16,8 @@ import com.intellij.ide.structureView.TreeBasedStructureViewBuilder;
 import com.intellij.lang.PsiStructureViewFactory;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiFile;
-import com.redhat.devtools.lsp4ij.LanguageServersRegistry;
+import com.redhat.devtools.lsp4ij.client.AcceptsFile;
+import com.redhat.devtools.lsp4ij.client.ProjectIndexingManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +28,7 @@ public class LSPDocumentSymbolStructureViewFactory implements PsiStructureViewFa
 
     @Override
     public @Nullable StructureViewBuilder getStructureViewBuilder(@NotNull PsiFile psiFile) {
-        if (!LanguageServersRegistry.getInstance().isFileSupported(psiFile)) {
+        if (ProjectIndexingManager.acceptsFile(psiFile) != AcceptsFile.OK_AND_NOW) {
             return null;
         }
         return new LSPDocumentSymbolStructureViewBuilder(psiFile);

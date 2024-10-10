@@ -20,6 +20,8 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.redhat.devtools.lsp4ij.LSPFileSupport;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
+import com.redhat.devtools.lsp4ij.client.AcceptsFile;
+import com.redhat.devtools.lsp4ij.client.ProjectIndexingManager;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Position;
@@ -50,8 +52,9 @@ public class LSPFoldingRangeBuilder extends CustomFoldingBuilder {
         if (quick) {
             return;
         }
+
         PsiFile file = root.getContainingFile();
-        if (file == null) {
+        if (ProjectIndexingManager.acceptsFile(file) != AcceptsFile.OK_AND_NOW) {
             return;
         }
 
@@ -125,4 +128,5 @@ public class LSPFoldingRangeBuilder extends CustomFoldingBuilder {
     public boolean isDumbAware() {
         return false;
     }
+
 }
