@@ -58,7 +58,7 @@ public class DocumentContentSynchronizer implements DocumentListener {
         // add a document buffer
         TextDocumentItem textDocument = new TextDocumentItem();
         textDocument.setUri(this.fileUri);
-        textDocument.setText(document.getText());
+        textDocument.setText(document.getCharsSequence().toString());
 
         @NotNull String languageId = languageServerWrapper.getServerDefinition().getLanguageId(file, languageServerWrapper.getProject());
         textDocument.setLanguageId(languageId);

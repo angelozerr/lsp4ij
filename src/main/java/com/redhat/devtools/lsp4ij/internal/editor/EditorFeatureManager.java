@@ -11,6 +11,7 @@
 package com.redhat.devtools.lsp4ij.internal.editor;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
@@ -72,6 +73,9 @@ public class EditorFeatureManager implements Disposable {
     public void refreshEditorFeature(@NotNull VirtualFile file,
                                      @NotNull EditorFeatureType featureType,
                                      boolean clearLSPCache) {
+        if(true) {
+            return;
+        }
         ReadAction.nonBlocking((Callable<List<Runnable>>) () -> {
                     // Get the Psi file.
                     PsiFile psiFile = LSPIJUtils.getPsiFile(file, project);
@@ -98,12 +102,23 @@ public class EditorFeatureManager implements Disposable {
                         // Collect runnable which must be executed on UI step.
                         collectUiRunnables(psiFile, editor, featureType, runnables);
                     }
-                    return runnables;
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        for (var runnable : runnables) {
+                            runnable.run();
+                        }
+                    });
+                    return null;
                 })
+                .coalesceBy(file, featureType)
                 .finishOnUiThread(ModalityState.any(), runnables -> {
                     if (runnables == null) {
                         return;
                     }
+                    /*try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+
+                    }*/
                     for (var runnable : runnables) {
                         runnable.run();
                     }

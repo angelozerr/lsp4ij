@@ -145,10 +145,10 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
             return;
         }
         // Try to get the LSP code action from the given index
-        this.action = lazyCodeActions.getCodeActionAt(index);
+        var actionData = this.action = lazyCodeActions.getCodeActionAt(index);
         if (isValidCodeAction()) {
             var codeActionFeature = getLanguageServer().getClientFeatures().getCodeActionFeature();
-            var action = this.action.getLeft().codeAction();
+            var action = actionData.getLeft().codeAction();
             if (action.isRight()) {
                 codeAction = action.getRight();
                 title = codeActionFeature.getText(codeAction);

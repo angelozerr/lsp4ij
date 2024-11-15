@@ -17,7 +17,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
-import com.redhat.devtools.lsp4ij.internal.telemetry.TelemetryManager;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +35,7 @@ public class LSPPostStartupActivity implements ProjectActivity, DumbAware {
             // On the first project which is loaded
             // we register a LanguageServerDefinitionListener to the LanguageServersRegistry,
             // to report telemetry events for added/removed LanguageServerDefinition.
-            TelemetryManager.instance().initialize();
+            //TelemetryManager.instance().initialize();
         }
         return null;
     }

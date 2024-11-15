@@ -48,6 +48,9 @@ public class LSPDiagnosticHandler implements Consumer<PublishDiagnosticsParams> 
 
     @Override
     public void accept(PublishDiagnosticsParams params) {
+        if(true) {
+            return;
+        }
         Project project = languageServerWrapper.getProject();
         if (project == null || project.isDisposed()) {
             return;

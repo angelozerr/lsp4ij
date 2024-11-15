@@ -91,7 +91,7 @@ public class LSPInlayHintsProvider extends AbstractLSPInlayHintsProvider {
             if (!future.isDone()) {
                 // the future which collects all textDocument/inlayHint for all servers is not finished
                 // add it to the pending futures to refresh again the UI when this future will be finished.
-                pendingFutures.add(future);
+               // pendingFutures.add(future);
             }
         }
     }

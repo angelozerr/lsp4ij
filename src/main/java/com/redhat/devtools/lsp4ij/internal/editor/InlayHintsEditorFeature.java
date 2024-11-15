@@ -85,7 +85,7 @@ public class InlayHintsEditorFeature implements EditorFeature {
             // Refresh the annotations, inlay hints both
             DaemonCodeAnalyzer.getInstance(file.getProject()).restart(file);
         };
-        runnableList.add(runnable);
+        //runnableList.add(runnable);
     }
 
     private static void loadInlayHintsPassFactoryIfNeeded() throws ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException {

@@ -127,10 +127,6 @@ public class LSPClientFeatures implements Disposable {
         return getServerWrapper().getLanguageServer();
     }
 
-    public boolean canStartServerWhileIndexing() {
-        return false;
-    }
-
     /**
      * Returns true if the server is kept alive even if all files associated with the language server are closed and false otherwise.
      *

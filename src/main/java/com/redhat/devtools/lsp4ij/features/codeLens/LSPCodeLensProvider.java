@@ -15,7 +15,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProcessCanceledException;
-import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.ThrowableComputable;
@@ -86,6 +85,9 @@ public class LSPCodeLensProvider implements CodeVisionProvider<Void> {
     @NotNull
     @Override
     public CodeVisionState computeCodeVision(@NotNull Editor editor, Void uiData) {
+        if (true) {
+            return CodeVisionState.Companion.getREADY_EMPTY();
+        }
         final Project project = editor.getProject();
         if (project == null || project.isDisposed()) {
             return CodeVisionState.Companion.getREADY_EMPTY();
@@ -195,12 +197,12 @@ public class LSPCodeLensProvider implements CodeVisionProvider<Void> {
 
     private static CodeVisionState computeCodeVisionUnderReadAction(@NotNull ThrowableComputable<CodeVisionState, Throwable> computable,
                                                                     @NotNull Project project) {
-        if (DumbService.isDumb(project)) {
+        if (ProjectIndexingManager.isIndexing(project)) {
             return CodeVisionState.NotReady.INSTANCE;
         }
         try {
             if (!EDT.isCurrentThreadEdt()) {
-                return ReadAction.computeCancellable(computable);
+                return ReadAction.compute(computable);
             } else {
                 // In tests [computeCodeVision] is executed in sync mode on EDT
                 assert (ApplicationManager.getApplication().isUnitTestMode());
