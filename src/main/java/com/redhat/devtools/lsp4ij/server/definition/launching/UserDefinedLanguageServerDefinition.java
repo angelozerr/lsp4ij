@@ -43,6 +43,7 @@ public class UserDefinedLanguageServerDefinition extends LanguageServerDefinitio
     private boolean includeSystemEnvironmentVariables;
     private String configurationContent;
     private Object configuration;
+    private String configurationSchemaContent;
     private String initializationOptionsContent;
     private Object initializationOptions;
 
@@ -53,6 +54,7 @@ public class UserDefinedLanguageServerDefinition extends LanguageServerDefinitio
                                                @NotNull Map<String, String> userEnvironmentVariables,
                                                boolean includeSystemEnvironmentVariables,
                                                @Nullable String configurationContent,
+                                               @Nullable String configurationSchemaContent,
                                                @Nullable String initializationOptionsContent) {
         super(id, name, description, true, null, false);
         this.name = name;
@@ -60,6 +62,7 @@ public class UserDefinedLanguageServerDefinition extends LanguageServerDefinitio
         this.userEnvironmentVariables = userEnvironmentVariables;
         this.includeSystemEnvironmentVariables = includeSystemEnvironmentVariables;
         this.configurationContent = configurationContent;
+        this.configurationSchemaContent = configurationSchemaContent;
         this.initializationOptionsContent = initializationOptionsContent;
     }
 
@@ -124,6 +127,14 @@ public class UserDefinedLanguageServerDefinition extends LanguageServerDefinitio
     public void setConfigurationContent(String configurationContent) {
         this.configurationContent = configurationContent;
         this.configuration = null;
+    }
+
+    public String getConfigurationSchemaContent() {
+        return configurationSchemaContent;
+    }
+
+    public void setConfigurationSchemaContent(String configurationSchemaContent) {
+        this.configurationSchemaContent = configurationSchemaContent;
     }
 
     public String getInitializationOptionsContent() {

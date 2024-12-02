@@ -1,0 +1,6 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory
+                implementation="com.redhat.devtools.lsp4ij.settings.jsonSchema.LSPJsonSchemaProviderFactory"/>
+    </extensions>
+</idea-plugin>

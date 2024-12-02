@@ -162,6 +162,7 @@ public class LanguageServersRegistry {
                                 launch.getUserEnvironmentVariables(),
                                 launch.isIncludeSystemEnvironmentVariables(),
                                 launch.getConfigurationContent(),
+                                launch.getConfigurationSchemaContent(),
                                 launch.getInitializationOptionsContent()),
                         mappings);
             }

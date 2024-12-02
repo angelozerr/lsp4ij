@@ -284,6 +284,7 @@ public class NewLanguageServerDialog extends DialogWrapper {
         Map<String, String> userEnvironmentVariables = this.languageServerPanel.getEnvironmentVariables().getEnvs();
         boolean includeSystemEnvironmentVariables = this.languageServerPanel.getEnvironmentVariables().isPassParentEnvs();
         String configuration = this.languageServerPanel.getConfiguration().getText();
+        String configurationSchema = null;
         String initializationOptions = this.languageServerPanel.getInitializationOptionsWidget().getText();
         UserDefinedLanguageServerDefinition definition = new UserDefinedLanguageServerDefinition(serverId,
                 serverName,
@@ -292,6 +293,7 @@ public class NewLanguageServerDialog extends DialogWrapper {
                 userEnvironmentVariables ,
                 includeSystemEnvironmentVariables,
                 configuration,
+                configurationSchema,
                 initializationOptions);
         LanguageServersRegistry.getInstance().addServerDefinition(project, definition, mappingSettings);
 

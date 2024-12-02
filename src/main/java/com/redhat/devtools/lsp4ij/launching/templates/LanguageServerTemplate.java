@@ -40,6 +40,7 @@ public class LanguageServerTemplate {
     public static final String TEMPLATE_FILE_NAME = "template.json";
     public static final String INITIALIZATION_OPTIONS_FILE_NAME = "initializationOptions.json";
     public static final String SETTINGS_FILE_NAME = "settings.json";
+    public static final String SETTINGS_SCHEMA_FILE_NAME = "settings.schema.json";
     public static final String README_FILE_NAME = "README.md";
 
     public static final String LANGUAGE_ID_JSON_PROPERTY = "languageId";
@@ -69,6 +70,7 @@ public class LanguageServerTemplate {
     private String description;
 
     private String configuration;
+    private String configurationSchema;
     private String initializationOptions;
 
     public String getName() {
@@ -140,6 +142,14 @@ public class LanguageServerTemplate {
 
     public void setConfiguration(String configuration) {
         this.configuration = configuration;
+    }
+
+    public String getConfigurationSchema() {
+        return configurationSchema;
+    }
+
+    public void setConfigurationSchema(String configurationSchema) {
+        this.configurationSchema = configurationSchema;
     }
 
     public String getInitializationOptions() {

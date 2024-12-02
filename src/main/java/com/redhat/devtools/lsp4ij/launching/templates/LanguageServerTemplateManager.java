@@ -17,25 +17,26 @@ import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.JarFileSystem;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.redhat.devtools.lsp4ij.internal.StringUtils;
 import com.redhat.devtools.lsp4ij.server.definition.LanguageServerDefinition;
+import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.redhat.devtools.lsp4ij.internal.StringUtils;
-import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import static com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplate.*;
 
@@ -130,6 +131,7 @@ public class LanguageServerTemplateManager {
     public LanguageServerTemplate createLsTemplate(@NotNull VirtualFile templateFolder) throws IOException {
         String templateJson = null;
         String settingsJson = null;
+        String settingsSchemaJson = null;
         String initializationOptionsJson = null;
         String description = null;
 
@@ -143,6 +145,9 @@ public class LanguageServerTemplateManager {
                     break;
                 case SETTINGS_FILE_NAME:
                     settingsJson = VfsUtilCore.loadText(file);
+                    break;
+                case SETTINGS_SCHEMA_FILE_NAME:
+                    settingsSchemaJson = VfsUtilCore.loadText(file);
                     break;
                 case INITIALIZATION_OPTIONS_FILE_NAME:
                     initializationOptionsJson = VfsUtilCore.loadText(file);
@@ -172,6 +177,7 @@ public class LanguageServerTemplateManager {
 
         LanguageServerTemplate template = gson.fromJson(templateJson, LanguageServerTemplate.class);
         template.setConfiguration(settingsJson);
+        template.setConfigurationSchema(settingsSchemaJson);
         template.setInitializationOptions(initializationOptionsJson);
         if (StringUtils.isNotBlank(description)) {
             template.setDescription(description);
@@ -216,11 +222,13 @@ public class LanguageServerTemplateManager {
             String template = gson.toJson(lsDefinition);
             String initializationOptions = ((UserDefinedLanguageServerDefinition) lsDefinition).getInitializationOptionsContent();
             String settings = ((UserDefinedLanguageServerDefinition) lsDefinition).getConfigurationContent();
+            String settingsSchema = ((UserDefinedLanguageServerDefinition) lsDefinition).getConfigurationSchemaContent();
             lsName = lsDefinition.getDisplayName();
 
             writeToZip(TEMPLATE_FILE_NAME, template, zos);
             writeToZip(INITIALIZATION_OPTIONS_FILE_NAME, initializationOptions, zos);
             writeToZip(SETTINGS_FILE_NAME, settings, zos);
+            writeToZip(SETTINGS_SCHEMA_FILE_NAME, settingsSchema, zos);
             zos.closeEntry();
             count++;
         }
