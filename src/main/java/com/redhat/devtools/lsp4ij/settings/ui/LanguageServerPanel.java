@@ -12,10 +12,12 @@ package com.redhat.devtools.lsp4ij.settings.ui;
 
 import com.intellij.execution.configuration.EnvironmentVariablesComponent;
 import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.ui.ContextHelpLabel;
+import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.PortField;
 import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBCheckBox;
@@ -27,6 +29,7 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.UIUtil;
 import com.intellij.util.ui.components.BorderLayoutPanel;
 import com.redhat.devtools.lsp4ij.LanguageServerBundle;
+import com.redhat.devtools.lsp4ij.internal.StringUtils;
 import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 import com.redhat.devtools.lsp4ij.settings.ErrorReportingKind;
 import com.redhat.devtools.lsp4ij.settings.ServerTrace;
@@ -44,11 +47,11 @@ import java.awt.*;
  * <ul>
  *     <li>Server tab</li>
  *     <li>Mappings tab</li>
- *     <li>Configuration tab</li>
+ *     <li>Configuration tab which hosts Server / Client configuration tabs</li>
  *     <li>Debug tab</li>
  * </ul>
  */
-public class LanguageServerPanel {
+public class LanguageServerPanel implements Disposable {
 
     private static final int COMMAND_LENGTH_MAX = 140;
 
@@ -71,6 +74,7 @@ public class LanguageServerPanel {
     private final JBCheckBox debugSuspendCheckBox = new JBCheckBox(LanguageServerBundle.message("language.server.debug.suspend"));
 
     private JsonTextField configurationWidget;
+    private String configurationSchemaContent;
     private JsonTextField initializationOptionsWidget;
     private JsonTextField clientConfigurationWidget;
 
@@ -262,6 +266,15 @@ public class LanguageServerPanel {
     private void createConfigurationField(FormBuilder builder) {
         configurationWidget = new JsonTextField(project);
         builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.configuration"), configurationWidget);
+        var editJsonSchema = new HyperlinkLabel("JSON Schema");
+        editJsonSchema.addHyperlinkListener(e-> {
+            var dialog = new EditJsonSchemaDialog(project, configurationSchemaContent);
+            dialog.show();
+            if (dialog.isOK()) {
+                this.setConfigurationSchemaContent(dialog.getJsonSchemaContent());
+            }
+        });
+        builder.addComponentToRightColumn(editJsonSchema);
     }
 
     private void createInitializationOptionsTabField(FormBuilder builder) {
@@ -296,6 +309,19 @@ public class LanguageServerPanel {
         return configurationWidget;
     }
 
+    public String getConfigurationSchemaContent() {
+        return configurationSchemaContent;
+    }
+
+    public void setConfigurationSchemaContent(String configurationSchemaContent) {
+        this.configurationSchemaContent = configurationSchemaContent;
+        if (StringUtils.isNotBlank(configurationSchemaContent)) {
+            getConfiguration().associateWithJsonSchema(configurationSchemaContent);
+        } else {
+            getConfiguration().resetJsonSchema();
+        }
+    }
+
     public JsonTextField getInitializationOptionsWidget() {
         return initializationOptionsWidget;
     }
@@ -318,5 +344,10 @@ public class LanguageServerPanel {
 
     public ComboBox<ErrorReportingKind> getErrorReportingKindCombo() {
         return errorReportingKindCombo;
+    }
+
+    @Override
+    public void dispose() {
+        getConfiguration().resetJsonSchema();
     }
 }

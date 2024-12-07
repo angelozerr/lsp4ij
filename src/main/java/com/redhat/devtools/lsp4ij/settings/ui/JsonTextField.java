@@ -20,6 +20,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.*;
 import com.intellij.util.containers.ContainerUtil;
+import com.redhat.devtools.lsp4ij.settings.jsonSchema.LSPServerConfigurationJsonSchemaManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -42,9 +43,13 @@ public class JsonTextField extends JPanel {
     private static final String JSON_LANGUAGE_NAME = "JSON";
     private static final String DEFAULT_VALUE = "{}";
 
+    private final @NotNull Project project;
+
     private final EditorTextField editorTextField;
+    private @Nullable Integer index;
 
     public JsonTextField(@NotNull Project project) {
+        this.project = project;
         // Create and initialize the editor text field
         EditorTextFieldProvider service = ApplicationManager.getApplication().getService(EditorTextFieldProvider.class);
         List<EditorCustomization> features = new ArrayList<>();
@@ -85,6 +90,16 @@ public class JsonTextField extends JPanel {
         }
     }
 
+    public void associateWithJsonSchema(@NotNull String jsonSchemaContent) {
+        var manager = LSPServerConfigurationJsonSchemaManager.getInstance(project);
+        if (index == null) {
+            index = manager.getUnusedIndex();
+        }
+        if (index != null) {
+            String jsonFileName = manager.setJsonSchemaContent(index, jsonSchemaContent);
+            setJsonFilename(jsonFileName);
+        }
+    }
     // Proxy some simple accessors to the editor text field
 
     public void setText(@Nullable String text) {
@@ -97,5 +112,13 @@ public class JsonTextField extends JPanel {
 
     public void setCaretPosition(int position) {
         editorTextField.setCaretPosition(position);
+    }
+
+    public void resetJsonSchema() {
+        setJsonFilename("lsp.server.settings.no.schema.json");
+        if (index != null) {
+            var manager = LSPServerConfigurationJsonSchemaManager.getInstance(project);
+            manager.reset(index);
+        }
     }
 }
