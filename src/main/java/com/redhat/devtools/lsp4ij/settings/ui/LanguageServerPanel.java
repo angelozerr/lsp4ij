@@ -44,7 +44,7 @@ import java.awt.*;
  * <ul>
  *     <li>Server tab</li>
  *     <li>Mappings tab</li>
- *     <li>Configuration tab</li>
+ *     <li>Configuration tab which hosts Server / Client configuration tabs</li>
  *     <li>Debug tab</li>
  * </ul>
  */
@@ -71,6 +71,7 @@ public class LanguageServerPanel {
     private final JBCheckBox debugSuspendCheckBox = new JBCheckBox(LanguageServerBundle.message("language.server.debug.suspend"));
 
     private JsonTextField configurationWidget;
+    private JsonTextField configurationSchemaWidget;
     private JsonTextField initializationOptionsWidget;
     private JsonTextField clientConfigurationWidget;
 
@@ -173,6 +174,7 @@ public class LanguageServerPanel {
 
         FormBuilder serverConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.server"), false);
         createConfigurationField(serverConfigurationTab);
+        createConfigurationSchemaField(serverConfigurationTab);
         createInitializationOptionsTabField(serverConfigurationTab);
 
         FormBuilder clientConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.client"), false);
@@ -264,6 +266,11 @@ public class LanguageServerPanel {
         builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.configuration"), configurationWidget);
     }
 
+    private void createConfigurationSchemaField(FormBuilder builder) {
+        configurationSchemaWidget = new JsonTextField(project);
+        builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.configuration"), configurationSchemaWidget);
+    }
+
     private void createInitializationOptionsTabField(FormBuilder builder) {
         initializationOptionsWidget = new JsonTextField(project);
         builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.initializationOptions"), initializationOptionsWidget);
@@ -294,6 +301,10 @@ public class LanguageServerPanel {
     // TODO: Rename this to getConfigurationWidget()? getServerConfigurationWidget()?
     public JsonTextField getConfiguration() {
         return configurationWidget;
+    }
+
+    public JsonTextField getConfigurationSchema() {
+        return configurationSchemaWidget;
     }
 
     public JsonTextField getInitializationOptionsWidget() {

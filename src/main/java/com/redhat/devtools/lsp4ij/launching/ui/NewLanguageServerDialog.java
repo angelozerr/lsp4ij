@@ -214,6 +214,11 @@ public class NewLanguageServerDialog extends DialogWrapper {
         configuration.setText(template.getConfiguration() != null ? template.getConfiguration() : "");
         configuration.setCaretPosition(0);
 
+        // Update server configuration JSON Schema
+        var configurationSchema = this.languageServerPanel.getConfigurationSchema();
+        configurationSchema.setText(template.getConfigurationSchema() != null ? template.getConfigurationSchema() : "");
+        configurationSchema.setCaretPosition(0);
+
         // Update initialization options
         var initializationOptions = this.languageServerPanel.getInitializationOptionsWidget();
         initializationOptions.setText(template.getInitializationOptions() != null ? template.getInitializationOptions() : "");
@@ -293,6 +298,7 @@ public class NewLanguageServerDialog extends DialogWrapper {
         Map<String, String> userEnvironmentVariables = this.languageServerPanel.getEnvironmentVariables().getEnvs();
         boolean includeSystemEnvironmentVariables = this.languageServerPanel.getEnvironmentVariables().isPassParentEnvs();
         String configuration = this.languageServerPanel.getConfiguration().getText();
+        String configurationSchema = this.languageServerPanel.getConfigurationSchema().getText();
         String initializationOptions = this.languageServerPanel.getInitializationOptionsWidget().getText();
         String clientConfiguration = this.languageServerPanel.getClientConfigurationWidget().getText();
         UserDefinedLanguageServerDefinition definition = new UserDefinedLanguageServerDefinition(serverId,
@@ -302,6 +308,7 @@ public class NewLanguageServerDialog extends DialogWrapper {
                 userEnvironmentVariables,
                 includeSystemEnvironmentVariables,
                 configuration,
+                configurationSchema,
                 initializationOptions,
                 clientConfiguration);
         LanguageServersRegistry.getInstance().addServerDefinition(project, definition, mappingSettings);
