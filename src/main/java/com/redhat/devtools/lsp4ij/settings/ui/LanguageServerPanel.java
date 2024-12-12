@@ -13,6 +13,8 @@ package com.redhat.devtools.lsp4ij.settings.ui;
 import com.intellij.execution.configuration.EnvironmentVariablesComponent;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.editor.event.DocumentEvent;
+import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.NlsContexts;
@@ -37,8 +39,6 @@ import com.redhat.devtools.lsp4ij.settings.jsonSchema.LSPClientConfigurationJson
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.*;
 
 /**
@@ -66,7 +66,7 @@ public class LanguageServerPanel implements Disposable {
 
     private JBTextField serverName;
     private EnvironmentVariablesComponent environmentVariables;
-    private CommandLineWidget commandLine;
+    private ShellTextField commandLine;
     private ServerMappingsPanel mappingsPanel;
 
     private final ComboBox<ErrorReportingKind> errorReportingKindCombo = new ComboBox<>(new DefaultComboBoxModel<>(ErrorReportingKind.values()));
@@ -207,7 +207,7 @@ public class LanguageServerPanel implements Disposable {
     }
 
     private void createCommandLineField(FormBuilder builder) {
-        commandLine = new CommandLineWidget();
+        commandLine = new ShellTextField(project);
         JBScrollPane scrollPane = new JBScrollPane(commandLine);
         scrollPane.setMinimumSize(new Dimension(JBUIScale.scale(600), JBUIScale.scale(100)));
         JLabel previewCommandLabel = createLabelForComponent("", scrollPane);
@@ -224,12 +224,13 @@ public class LanguageServerPanel implements Disposable {
      * @param project             the project.
      * @see <a href="https://www.jetbrains.com/help/idea/built-in-macros.html">Built In Macro</a>
      */
-    private static void updatePreviewCommand(@NotNull CommandLineWidget commandLine,
+    private static void updatePreviewCommand(@NotNull ShellTextField commandLine,
                                              @NotNull JLabel previewCommandLabel,
                                              @NotNull Project project) {
         commandLine.getDocument().addDocumentListener(new DocumentListener() {
+
             @Override
-            public void insertUpdate(DocumentEvent e) {
+            public void documentChanged(@NotNull DocumentEvent event) {
                 updateLabel(previewCommandLabel);
             }
 
@@ -245,15 +246,6 @@ public class LanguageServerPanel implements Disposable {
                 }
             }
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updateLabel(previewCommandLabel);
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updateLabel(previewCommandLabel);
-            }
         });
     }
 
@@ -302,7 +294,7 @@ public class LanguageServerPanel implements Disposable {
         return environmentVariables;
     }
 
-    public CommandLineWidget getCommandLine() {
+    public ShellTextField getCommandLine() {
         return commandLine;
     }
 

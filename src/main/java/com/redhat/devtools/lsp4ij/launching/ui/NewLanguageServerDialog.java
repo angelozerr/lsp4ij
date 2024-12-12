@@ -13,6 +13,7 @@ package com.redhat.devtools.lsp4ij.launching.ui;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
+import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
@@ -31,6 +32,7 @@ import com.redhat.devtools.lsp4ij.launching.ServerMappingSettings;
 import com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplate;
 import com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplateManager;
 import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
+import com.redhat.devtools.lsp4ij.settings.ui.AbstractLanguageTextField;
 import com.redhat.devtools.lsp4ij.settings.ui.LanguageServerPanel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -316,6 +318,15 @@ public class NewLanguageServerDialog extends DialogWrapper {
         textComponent.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
             protected void textChanged(@NotNull DocumentEvent e) {
+                NewLanguageServerDialog.super.initValidation();
+            }
+        });
+    }
+
+    private void addValidator(AbstractLanguageTextField textComponent) {
+        textComponent.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void documentChanged(com.intellij.openapi.editor.event.@NotNull DocumentEvent event) {
                 NewLanguageServerDialog.super.initValidation();
             }
         });
