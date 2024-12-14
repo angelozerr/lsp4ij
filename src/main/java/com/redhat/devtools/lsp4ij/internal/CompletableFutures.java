@@ -34,7 +34,7 @@ import java.util.function.Function;
  *
  * @author Angelo ZERR
  */
-public class CompletableFutures {
+public class CompletableFutures<V> {
 
     private CompletableFutures() {
 

@@ -713,4 +713,13 @@ L
                   topic="com.intellij.openapi.project.DumbService$DumbModeListener"/>
     </projectListeners>
 
+    <!-- DAP Support -->
+    <extensions defaultExtensionNs="com.intellij">
+        <programRunner implementation="com.redhat.devtools.lsp4ij.debugger.DAPDebugRunner"/>
+        <configurationType
+                implementation="com.redhat.devtools.lsp4ij.debugger.execution.DAPRunConfigurationType"/>
+        <xdebugger.breakpointType
+                implementation="com.redhat.devtools.lsp4ij.debugger.breakpoints.DAPBreakpointType"/>
+    </extensions>
+
 </idea-plugin>
