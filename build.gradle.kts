@@ -27,6 +27,7 @@ val flexmarkVersion = prop("flexmarkVersion")
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
     maven { url = uri("https://repository.jboss.org/nexus/content/repositories/snapshots") }
     maven { url = uri("https://repository.jboss.org/nexus/content/groups/public") }
     maven { url = uri("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies") }
@@ -54,6 +55,7 @@ dependencies {
     implementation("org.zeroturnaround:zt-zip:1.14")
     implementation("org.jsoup:jsoup:1.17.1")
     implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:$lsp4jVersion")
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j.debug:$lsp4jVersion")
     // Required by lsp4j as the version from IJ is incompatible
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.vladsch.flexmark:flexmark:$flexmarkVersion")
