@@ -29,19 +29,12 @@ public class ProjectIndexingOnlyDumbStrategy extends ProjectIndexingStrategyBase
 
     @Override
     public void enteredDumbMode() {
-        if (isEnabled()) {
-            onStartedDumbIndexing(project);
-        }
+        onStartedDumbIndexing(project);
     }
 
     @Override
     public void exitDumbMode() {
-        if (isEnabled()) {
-            onFinishedDumbIndexing(project);
-        }
+        onFinishedDumbIndexing(project);
     }
 
-    public boolean isEnabled() {
-        return !ProjectIndexingDumbAndScanningStrategy.getInstance().isEnabled();
-    }
 }

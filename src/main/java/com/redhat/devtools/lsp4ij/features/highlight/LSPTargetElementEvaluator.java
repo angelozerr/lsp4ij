@@ -17,7 +17,6 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServersRegistry;
-import com.redhat.devtools.lsp4ij.client.indexing.ProjectIndexingManager;
 import com.redhat.devtools.lsp4ij.features.LSPPsiElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,11 +30,6 @@ public class LSPTargetElementEvaluator extends TargetElementEvaluatorEx2 {
         if (!LanguageServersRegistry.getInstance().isFileSupported(file)) {
             return null;
         }
-
-        if (ProjectIndexingManager.isIndexingAll()) {
-            return null;
-        }
-
         // Try to find the word at the caret and return a fake PSI element for it
         TextRange targetTextRange = LSPIJUtils.getWordRangeAt(editor.getDocument(), file, offset);
         return targetTextRange != null ? new LSPPsiElement(file, targetTextRange) : null;

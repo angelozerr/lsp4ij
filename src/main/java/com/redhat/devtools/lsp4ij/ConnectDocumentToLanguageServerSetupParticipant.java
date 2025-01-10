@@ -10,12 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij;
 
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
+import com.intellij.util.concurrency.AppExecutorUtil;
 import com.redhat.devtools.lsp4ij.client.indexing.ProjectIndexingManager;
 import com.redhat.devtools.lsp4ij.lifecycle.LanguageServerLifecycleManager;
 import org.jetbrains.annotations.NotNull;
@@ -39,16 +41,26 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements ProjectM
     @Override
     public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
         Project project = source.getProject();
+        if (!LanguageServersRegistry.getInstance().isFileSupported(file, project)) {
+            return;
+        }
+
         // As document matcher requires read action, and language server starts can take some times, we connect the file in a future
         // to avoid starting language server in the EDT Thread which could freeze IJ.
         // Wait for indexing is finished and read action is enabled
         // --> force the start of all languages servers mapped with the given file when indexing is finished and read action is allowed
-        ProjectIndexingManager
-                .waitForIndexingAll()
-                .thenApplyAsync(unused -> {
-                    connectToLanguageServer(file, project);
-                    return null;
-                });
+        if (ProjectIndexingManager.isIndexing(project)) {
+            ProjectIndexingManager
+                    .waitForIndexingAll()
+                    .thenApplyAsync(unused -> {
+                        connectToLanguageServer(file, project);
+                        return null;
+                    });
+        } else {
+            ReadAction.nonBlocking(() -> {
+                connectToLanguageServer(file, project);
+            }).submit(AppExecutorUtil.getAppExecutorService());
+        }
     }
 
     @Override

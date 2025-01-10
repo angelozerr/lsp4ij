@@ -19,6 +19,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,10 +40,11 @@ public class DocumentContentSynchronizer implements DocumentListener {
     private final @NotNull Document document;
     private final @NotNull String fileUri;
     private final TextDocumentSyncKind syncKind;
+    private @Nullable LanguageServer languageServer;
 
     private int version = 0;
     private final List<TextDocumentContentChangeEvent> changeEvents;
-    @NotNull final CompletableFuture<Void> didOpenFuture;
+    @NotNull private final CompletableFuture<Void> didOpenFuture;
 
     public DocumentContentSynchronizer(@NotNull LanguageServerWrapper languageServerWrapper,
                                        @NotNull String fileUri,
@@ -64,8 +66,11 @@ public class DocumentContentSynchronizer implements DocumentListener {
         textDocument.setVersion(++version);
         didOpenFuture = languageServerWrapper
                 .getInitializedServer()
-                .thenAcceptAsync(ls -> ls.getTextDocumentService()
-                        .didOpen(new DidOpenTextDocumentParams(textDocument)))
+                .thenAcceptAsync(ls -> {
+                    languageServer = ls;
+                    ls.getTextDocumentService()
+                            .didOpen(new DidOpenTextDocumentParams(textDocument));
+                })
                 .thenCompose(result ->
                         CompletableFuture.runAsync(() -> {
                             if (ApplicationManager.getApplication().isUnitTestMode()) {
@@ -219,4 +224,18 @@ public class DocumentContentSynchronizer implements DocumentListener {
         return version;
     }
 
+    public CompletableFuture<LanguageServer> getLanguageServerWhenDidOpen() {
+        if (languageServer == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (didOpenFuture.isDone()) {
+            // The didOpen has happened, no need to wait for the didOpen
+            // to return the language server
+            return CompletableFuture.completedFuture(languageServer);
+        }
+        // The didOpen has not happened, wait for the end of didOpen
+        // to return the language server
+        return didOpenFuture
+                .thenApplyAsync(theVoid -> languageServer);
+    }
 }

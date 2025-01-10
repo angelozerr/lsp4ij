@@ -11,7 +11,6 @@
 package com.redhat.devtools.lsp4ij.client.indexing;
 
 import com.intellij.openapi.Disposable;
-import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -58,7 +57,7 @@ public class ProjectIndexingManager implements Disposable {
     }
 
     public boolean isIndexing() {
-        return scanning || dumbIndexing || DumbService.isDumb(project);
+        return scanning || dumbIndexing;
     }
 
     /**
@@ -138,7 +137,7 @@ public class ProjectIndexingManager implements Disposable {
             return ExecuteLSPFeatureStatus.NOT;
         }
         ProjectIndexingManager manager = getInstance(project);
-        if (manager.isIndexingAll()) {
+        if (manager.isIndexing()) {
             // The file is associated to a language server, but the project is indexing
             // Execute the LSP feature when the project indexing process is finished.
             manager.filesToRefresh.add(file);

@@ -684,7 +684,7 @@ public class LanguageServerWrapper implements Disposable {
                 LSPVirtualFileData data = new LSPVirtualFileData(new LanguageServerItem(languageServer, this), file, synchronizer);
                 LanguageServerWrapper.this.connectedDocuments.put(fileUri, data);
 
-                return getLanguageServerWhenDidOpen(synchronizer.didOpenFuture);
+                return synchronizer.getLanguageServerWhenDidOpen();
             }
         });
     }
@@ -698,22 +698,9 @@ public class LanguageServerWrapper implements Disposable {
         if (existingData != null) {
             // The file is already connected.
             // returns the language server instance when didOpen happened
-            var didOpenFuture = existingData.getSynchronizer().didOpenFuture;
-            return getLanguageServerWhenDidOpen(didOpenFuture);
+            return existingData.getSynchronizer().getLanguageServerWhenDidOpen();
         }
         return null;
-    }
-
-    private CompletableFuture<LanguageServer> getLanguageServerWhenDidOpen(CompletableFuture<Void> didOpenFuture) {
-        if (didOpenFuture.isDone()) {
-            // The didOpen has happened, no need to wait for the didOpen
-            // to return the language server
-            return CompletableFuture.completedFuture(languageServer);
-        }
-        // The didOpen has not happened, wait for the end of didOpen
-        // to return the language server
-        return didOpenFuture
-                .thenApplyAsync(theVoid -> languageServer);
     }
 
     @NotNull

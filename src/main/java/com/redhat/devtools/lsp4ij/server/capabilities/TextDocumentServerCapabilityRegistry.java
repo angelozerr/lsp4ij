@@ -29,7 +29,7 @@ public abstract class TextDocumentServerCapabilityRegistry<T extends TextDocumen
     private final List<T> dynamicCapabilities;
 
     public TextDocumentServerCapabilityRegistry(@NotNull LSPClientFeatures clientFeatures) {
-     this(clientFeatures,null);
+        this(clientFeatures, null);
     }
 
     public TextDocumentServerCapabilityRegistry(@NotNull LSPClientFeatures clientFeatures,
@@ -60,8 +60,14 @@ public abstract class TextDocumentServerCapabilityRegistry<T extends TextDocumen
             // Refresh codelens, inlay hints, folding, etc according to the register/unregister capability.
             for (var fileData : clientFeatures.getServerWrapper().getConnectedFiles()) {
                 VirtualFile file = fileData.getFile();
-                EditorFeatureManager.getInstance(clientFeatures.getProject())
-                        .refreshEditorFeature(file, editorFeatureType, true);
+                fileData.getSynchronizer()
+                        .getLanguageServerWhenDidOpen()
+                        .thenAccept(languageServer -> {
+                            if (languageServer != null) {
+                                EditorFeatureManager.getInstance(clientFeatures.getProject())
+                                        .refreshEditorFeature(file, editorFeatureType, true);
+                            }
+                        });
             }
         }
         return t;
@@ -114,7 +120,7 @@ public abstract class TextDocumentServerCapabilityRegistry<T extends TextDocumen
                         languageIdGet = true;
                     }
                     matchDocumentSelector = (languageId == null && !hasScheme && !hasPattern) // to be compatible with LSP4IJ < 0.7.0, when languageId is not defined in the mapping, we consider that it matches the documentSelector
-                                            || filter.getLanguage().equals(languageId);
+                            || filter.getLanguage().equals(languageId);
                 }
 
                 if (!matchDocumentSelector) {
