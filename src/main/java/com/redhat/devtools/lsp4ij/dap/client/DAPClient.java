@@ -10,10 +10,16 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.dap.client;
 
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.configurations.PtyCommandLine;
+import com.intellij.execution.process.ProcessEvent;
+import com.intellij.execution.process.ProcessListener;
+import com.intellij.execution.process.ProcessOutputType;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.util.Key;
 import com.intellij.xdebugger.XDebugSession;
 import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.frame.XSuspendContext;
@@ -25,6 +31,7 @@ import com.redhat.devtools.lsp4ij.dap.breakpoints.DAPBreakpointProperties;
 import com.redhat.devtools.lsp4ij.dap.descriptors.DebugAdapterDescriptor;
 import com.redhat.devtools.lsp4ij.internal.StringUtils;
 import com.redhat.devtools.lsp4ij.settings.ServerTrace;
+import kotlin.text.Charsets;
 import org.eclipse.lsp4j.debug.*;
 import org.eclipse.lsp4j.debug.launch.DSPLauncher;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
@@ -39,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -320,6 +328,86 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
     public void terminated(TerminatedEventArguments args) {
         // TODO : manage args.getRestart()
         debugProcess.stop();
+    }
+
+    @Override
+    public CompletableFuture<RunInTerminalResponse> runInTerminal(RunInTerminalRequestArguments args) {
+        return CompletableFuture.supplyAsync(() -> {
+            var commandLine = new PtyCommandLine(Arrays.asList(args.getArgs()));
+            commandLine.setCharset(Charsets.UTF_8);
+            var cwd = StringUtils.isNotBlank(args.getCwd()) ? Paths.get(args.getCwd()) : null;
+            if (cwd != null) {
+                commandLine.withWorkDirectory(cwd.toFile());
+            }
+            try {
+                var childProcess = new TerminalProcessHandler(commandLine);
+                childProcess.addProcessListener(new ProcessListener() {
+                    @Override
+                    public void onTextAvailable(@NotNull ProcessEvent event, @NotNull Key outputType) {
+                        String text = event.getText();
+                        debugProcess.print(text, getContentType(outputType));
+                    }
+
+                    private @NotNull ConsoleViewContentType getContentType(@NotNull Key outputType) {
+                        if (ProcessOutputType.isStdout(outputType)) {
+                            return ConsoleViewContentType.NORMAL_OUTPUT;
+                        } else if (ProcessOutputType.isStderr(outputType)) {
+                            return ConsoleViewContentType.ERROR_OUTPUT;
+                        } else {
+                            return ConsoleViewContentType.SYSTEM_OUTPUT;
+                        }
+                    }
+                });
+
+                childProcess.startNotify();
+                //var processInput = childProcess.processInput;
+                //this@DAPDriver.processInput = processInput
+                RunInTerminalResponse response = new RunInTerminalResponse();
+                response.setShellProcessId((int)childProcess.getProcess().pid());
+                return response;
+                /*resp.shellProcessId = childProcess.process.pid().toInt()
+                zigCoroutineScope.launch {
+                    dummyOutput?.toByteArray()?.let { processInput.write(it) }
+                    dummyOutput = null
+                }*/
+
+
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        /*val cli = PtyCommandLine(args.args.toList())
+        cli.charset = Charsets.UTF_8
+        val cwd = args.cwd?.ifBlank { null }?.toNioPathOrNull()
+        if (cwd != null) {
+            cli.withWorkingDirectory(cwd)
+        }
+        val childProcess = ZigProcessHandler(cli)
+        this@DAPDriver.childProcess = childProcess
+        childProcess.addProcessListener(object: ProcessListener {
+            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                handleTargetOutput(
+                        event.text,
+                if (ProcessOutputType.isStdout(outputType)) {
+                    ProcessOutputType.STDOUT
+                } else if (ProcessOutputType.isStderr(outputType)) {
+                    ProcessOutputType.STDERR
+                } else {
+                    ProcessOutputType.SYSTEM
+                }
+                    )
+            }
+        })
+        childProcess.startNotify()
+        val processInput = childProcess.processInput
+        this@DAPDriver.processInput = processInput
+        val resp = RunInTerminalResponse()
+        resp.shellProcessId = childProcess.process.pid().toInt()
+        zigCoroutineScope.launch {
+            dummyOutput?.toByteArray()?.let { processInput.write(it) }
+            dummyOutput = null
+        }
+        return resp*/
     }
 
     @Override
