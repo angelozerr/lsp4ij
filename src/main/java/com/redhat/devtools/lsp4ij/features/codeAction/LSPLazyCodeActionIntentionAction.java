@@ -62,13 +62,13 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
     @Override
     public @IntentionName @NotNull String getText() {
         loadCodeActionIfNeeded();
-        return title;
+        return title != null? title : "";
     }
 
     @Override
     public @NotNull @IntentionFamilyName String getFamilyName() {
         loadCodeActionIfNeeded();
-        return familyName;
+        return familyName != null ? familyName :  LanguageServerBundle.message("lsp.intention.code.action.kind.empty");
     }
 
     @Override
@@ -118,13 +118,28 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
                 executeCommand(codeaction.getCommand(), file, editor, languageServerItem);
             }
         }
+        // After applying code action, evict the code actions cache
+        // to avoid providing irrelevant Quick Fixes.
+        clearCodeActionsCache();
     }
 
-    private static void executeCommand(@NotNull Command command,
+    private void executeCommand(@NotNull Command command,
                                 @NotNull PsiFile file,
                                 @NotNull Editor editor,
                                 @NotNull LanguageServerItem languageServer) {
         CommandExecutor.executeCommand(new LSPCommandContext(command, file, LSPCommandContext.ExecutedBy.CODE_ACTION, editor, languageServer));
+        clearCodeActionsCache();
+    }
+
+    /**
+     * Clear code actions cache if needed.
+     */
+    private void clearCodeActionsCache() {
+        clear();
+        if (lazyCodeActions != null) {
+            lazyCodeActions.clear();
+            lazyCodeActions=null;
+        }
     }
 
     private LanguageServerItem getLanguageServer() {
@@ -174,4 +189,11 @@ public class LSPLazyCodeActionIntentionAction implements IntentionAction {
         return action != null && action.isLeft();
     }
 
+    public void clear() {
+        action = null;
+        title = "";
+        familyName=  LanguageServerBundle.message("lsp.intention.code.action.kind.empty");
+        codeAction = null;
+        command = null;
+    }
 }
