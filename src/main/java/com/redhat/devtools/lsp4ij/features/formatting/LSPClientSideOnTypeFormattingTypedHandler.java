@@ -199,7 +199,9 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                 if ((startOffset > 0) && (documentChars.charAt(startOffset) != openBraceChar)) {
                     startOffset--;
                 }
-                if ((endOffset > 0) && (documentChars.charAt(endOffset) != closeBraceChar) && (documentChars.charAt(endOffset - 1) == closeBraceChar)) {
+                if ((endOffset > 0) &&
+                        (endOffset == documentChars.length() || documentChars.charAt(endOffset) != closeBraceChar) &&
+                        (documentChars.charAt(endOffset - 1) == closeBraceChar)) {
                     endOffset--;
                 }
                 if ((endOffset < (documentChars.length() - 1)) && (documentChars.charAt(endOffset) != closeBraceChar)) {
