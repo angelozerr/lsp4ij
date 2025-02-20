@@ -20,6 +20,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.util.NlsContexts;
+import com.intellij.xdebugger.XAlternativeSourceHandler;
 import com.intellij.xdebugger.XDebugProcess;
 import com.intellij.xdebugger.XDebugSession;
 import com.intellij.xdebugger.XSourcePosition;
@@ -305,5 +306,10 @@ public class DAPDebugProcess extends XDebugProcess {
                     resume(context); // and resume the debugger
                     return null;
                 });
+    }
+
+    @Override
+    public @Nullable XAlternativeSourceHandler getAlternativeSourceHandler() {
+        return super.getAlternativeSourceHandler();
     }
 }
