@@ -27,12 +27,14 @@ import com.intellij.xdebugger.breakpoints.XBreakpointHandler;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
 import com.intellij.xdebugger.frame.XStackFrame;
 import com.intellij.xdebugger.frame.XSuspendContext;
+import com.intellij.xdebugger.ui.XDebugTabLayouter;
 import com.redhat.devtools.lsp4ij.dap.breakpoints.DAPBreakpointHandler;
 import com.redhat.devtools.lsp4ij.dap.client.DAPClient;
 import com.redhat.devtools.lsp4ij.dap.client.DAPStackFrame;
 import com.redhat.devtools.lsp4ij.dap.client.DAPSuspendContext;
 import com.redhat.devtools.lsp4ij.dap.configurations.DAPCommandLineState;
 import com.redhat.devtools.lsp4ij.dap.descriptors.DebugAdapterDescriptor;
+import com.redhat.devtools.lsp4ij.dap.ui.DAPDebugTabLayouter;
 import com.redhat.devtools.lsp4ij.internal.CompletableFutures;
 import com.redhat.devtools.lsp4ij.internal.StringUtils;
 import com.redhat.devtools.lsp4ij.settings.ServerTrace;
@@ -305,5 +307,10 @@ public class DAPDebugProcess extends XDebugProcess {
                     resume(context); // and resume the debugger
                     return null;
                 });
+    }
+
+    @Override
+    public @NotNull XDebugTabLayouter createTabLayouter() {
+        return new DAPDebugTabLayouter(this);
     }
 }
