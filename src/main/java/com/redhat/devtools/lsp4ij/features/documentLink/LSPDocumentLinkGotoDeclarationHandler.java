@@ -14,6 +14,7 @@
 package com.redhat.devtools.lsp4ij.features.documentLink;
 
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.module.Module;
@@ -98,7 +99,9 @@ public class LSPDocumentLinkGotoDeclarationHandler implements GotoDeclarationHan
                                 // which asks if user want to create the file.
                                 // At this step we cannot open a dialog directly, we need to open the dialog
                                 // with invoke later.
-                                LSPIJUtils.openInEditor(target, null, true, true, fileUriSupport, project);
+                                ApplicationManager.getApplication().invokeLater(() -> {
+                                            LSPIJUtils.openInEditor(target, null, true, true, fileUriSupport, project);
+                                        });
                                 // Return an empty response here.
                                 // If user accepts to create the file, the open is done after the creation of the file.
                                 return PsiElement.EMPTY_ARRAY;
