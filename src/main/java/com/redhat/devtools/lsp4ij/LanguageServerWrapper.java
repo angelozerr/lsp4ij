@@ -952,12 +952,14 @@ public class LanguageServerWrapper implements Disposable {
      * Sends a notification to the wrapped language server
      *
      * @param fn LS notification to send
+     * @return
      */
-    public void sendNotification(@NotNull Consumer<LanguageServer> fn) {
+    public CompletableFuture<Void> sendNotification(@NotNull Consumer<LanguageServer> fn) {
         // Enqueues a notification on the dispatch thread associated with the wrapped language server. This
         // ensures the interleaving of document updates and other requests in the UI is mirrored in the
         // order in which they get dispatched to the server
-        getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
+        return getInitializedServer()
+                .thenAcceptAsync(fn, this.dispatcher);
     }
 
     /**

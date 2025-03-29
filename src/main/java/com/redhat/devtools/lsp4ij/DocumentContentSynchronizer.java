@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij;
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.event.DocumentEvent;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -144,7 +146,28 @@ public class DocumentContentSynchronizer implements DocumentListener {
         DidChangeTextDocumentParams changeParamsToSend = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), events);
         changeParamsToSend.getTextDocument().setUri(fileUri);
         changeParamsToSend.getTextDocument().setVersion(++version);
-        languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+        var didChange = languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+        didChange
+                .thenRun(() -> {
+                    DocumentDiagnosticParams params = new DocumentDiagnosticParams();
+                    params.setTextDocument(new TextDocumentIdentifier(fileUri));
+                    languageServerWrapper.getLanguageServer().getTextDocumentService()
+                            .diagnostic(params)
+                            .thenAcceptAsync(report -> {
+                               if(report.isLeft()) {
+                                   var r = report.getLeft();
+                                   var items = r.getItems();
+                                   var openedDocument = languageServerWrapper.getOpenedDocument(LSPIJUtils.toUri(file));
+                                   openedDocument.updateDiagnostics(items != null ? items : Collections.emptyList());
+                                   DaemonCodeAnalyzer.getInstance(languageServerWrapper.getProject()).restart(LSPIJUtils.getPsiFile(file, languageServerWrapper.getProject()));
+                               } else if(report.isRight()) {
+                                   var r = report.getRight();
+
+                               }
+                            });
+
+                });
+
     }
 
     @Override
