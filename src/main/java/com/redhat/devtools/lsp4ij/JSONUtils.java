@@ -18,6 +18,7 @@ import com.intellij.ide.plugins.cl.PluginAwareClassLoader;
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either3;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -200,6 +201,47 @@ public class JSONUtils {
         }
         if (current != null) {
             return current.get(paths[paths.length - 1]);
+        }
+        return null;
+    }
+
+
+    public static @Nullable JsonObject getJsonObject(@NotNull JsonObject json,
+                                                     @NotNull String name) {
+        if (!json.has(name)) {
+            return null;
+        }
+        var element = json.get(name);
+        if (!element.isJsonObject()) {
+            return null;
+        }
+        return element.getAsJsonObject();
+    }
+
+    public static @Nullable JsonArray getJsonArray(@NotNull JsonObject json,
+                                                   @NotNull String name) {
+        if (!json.has(name)) {
+            return null;
+        }
+        var element = json.get(name);
+        if (!element.isJsonArray()) {
+            return null;
+        }
+        return element.getAsJsonArray();
+    }
+
+    public static @Nullable String getString(@NotNull JsonObject json,
+                                             @NotNull String name) {
+        if (!json.has(name)) {
+            return null;
+        }
+        var element = json.get(name);
+        if (!element.isJsonPrimitive()) {
+            return null;
+        }
+        var primitive = element.getAsJsonPrimitive();
+        if (primitive.isString()) {
+            return primitive.getAsString();
         }
         return null;
     }

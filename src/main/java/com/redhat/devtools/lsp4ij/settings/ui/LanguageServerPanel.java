@@ -11,15 +11,16 @@
 package com.redhat.devtools.lsp4ij.settings.ui;
 
 import com.intellij.execution.configuration.EnvironmentVariablesComponent;
+import com.intellij.execution.filters.TextConsoleBuilder;
+import com.intellij.execution.filters.TextConsoleBuilderFactory;
+import com.intellij.execution.ui.ConsoleView;
+import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.NlsContexts;
-import com.intellij.ui.ContextHelpLabel;
-import com.intellij.ui.HyperlinkLabel;
-import com.intellij.ui.PortField;
-import com.intellij.ui.SimpleListCellRenderer;
+import com.intellij.ui.*;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTabbedPane;
@@ -29,10 +30,13 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.UIUtil;
 import com.intellij.util.ui.components.BorderLayoutPanel;
 import com.redhat.devtools.lsp4ij.LanguageServerBundle;
+import com.redhat.devtools.lsp4ij.installation.definition.InstallerContext;
+import com.redhat.devtools.lsp4ij.installation.definition.ServerInstallerManager;
 import com.redhat.devtools.lsp4ij.internal.StringUtils;
 import com.redhat.devtools.lsp4ij.settings.ErrorReportingKind;
 import com.redhat.devtools.lsp4ij.settings.ServerTrace;
 import com.redhat.devtools.lsp4ij.settings.jsonSchema.LSPClientConfigurationJsonSchemaFileProvider;
+import com.redhat.devtools.lsp4ij.settings.jsonSchema.ServerInstallerJsonSchemaFileProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +84,8 @@ public class LanguageServerPanel implements Disposable {
     private String configurationSchemaContent;
     private JsonTextField initializationOptionsWidget;
     private JsonTextField clientConfigurationWidget;
-
+    private JsonTextField installerConfigurationWidget;
+    
     public LanguageServerPanel(@NotNull FormBuilder builder,
                                @Nullable JComponent description,
                                @NotNull EditionMode mode,
@@ -89,7 +94,9 @@ public class LanguageServerPanel implements Disposable {
         createUI(builder, description, mode);
     }
 
-    private void createUI(FormBuilder builder, JComponent description, EditionMode mode) {
+    private void createUI(@NotNull FormBuilder builder,
+                          @Nullable JComponent description,
+                          @NotNull EditionMode mode) {
         JBTabbedPane tabbedPane = new JBTabbedPane();
         builder.addComponentFillVertically(tabbedPane, 0);
 
@@ -100,12 +107,16 @@ public class LanguageServerPanel implements Disposable {
         if (mode != EditionMode.EDIT_EXTENSION) {
             // Configuration tab to fill LSP Configuration + LSP Initialize Options
             addConfigurationTab(tabbedPane);
+            // Installer tab to fill installer of the LSP server
+            addInstallerTab(tabbedPane);
         }
         // Debug tab
         addDebugTab(tabbedPane, mode);
     }
 
-    private void addServerTab(JBTabbedPane tabbedPane, JComponent description, EditionMode mode) {
+    private void addServerTab(@NotNull JBTabbedPane tabbedPane,
+                              @Nullable JComponent description,
+                              @NotNull EditionMode mode) {
         FormBuilder serverTab = addTab(tabbedPane, LanguageServerBundle.message("language.server.tab.server"));
         if (description != null) {
             serverTab.addComponent(description, 0);
@@ -122,12 +133,33 @@ public class LanguageServerPanel implements Disposable {
         }
     }
 
-    private void addMappingsTab(JBTabbedPane tabbedPane, EditionMode mode) {
+    private void addMappingsTab(@NotNull JBTabbedPane tabbedPane,
+                                @NotNull EditionMode mode) {
         FormBuilder mappingsTab = addTab(tabbedPane, LanguageServerBundle.message("language.server.tab.mappings"));
         this.mappingsPanel = new ServerMappingsPanel(mappingsTab, mode != EditionMode.EDIT_EXTENSION);
     }
+    
+    private void addConfigurationTab(@NotNull JBTabbedPane tabbedPane) {
+        FormBuilder configurationTab = addTab(tabbedPane, LanguageServerBundle.message("language.server.tab.configuration"), false);
 
-    private void addDebugTab(JBTabbedPane tabbedPane, EditionMode mode) {
+        JBTabbedPane configurationTabbedPane = new JBTabbedPane();
+        configurationTab.addComponentFillVertically(configurationTabbedPane, 0);
+
+        FormBuilder serverConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.server"), false);
+        createConfigurationField(serverConfigurationTab);
+        createInitializationOptionsTabField(serverConfigurationTab);
+
+        FormBuilder clientConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.client"), false);
+        createClientConfigurationField(clientConfigurationTab);
+    }
+
+    private void addInstallerTab(@NotNull JBTabbedPane tabbedPane) {
+        FormBuilder installerTab = addTab(tabbedPane, LanguageServerBundle.message("language.server.tab.installer"),  false);
+        createInstallerConfigurationField(installerTab);
+    }
+
+    private void addDebugTab(@NotNull JBTabbedPane tabbedPane,
+                             @NotNull EditionMode mode) {
         if (mode == EditionMode.NEW_USER_DEFINED) {
             return;
         }
@@ -147,7 +179,7 @@ public class LanguageServerPanel implements Disposable {
         }
     }
 
-    private void createErrorReportingCombo(FormBuilder builder) {
+    private void createErrorReportingCombo(@NotNull FormBuilder builder) {
 
         errorReportingKindCombo.setRenderer(SimpleListCellRenderer.create((label, value, index) -> {
             String text = LanguageServerBundle.message("language.server.error.reporting.none");
@@ -175,26 +207,14 @@ public class LanguageServerPanel implements Disposable {
         builder.addLabeledComponent(LanguageServerBundle.message("language.server.error.reporting"), panel, 0);
     }
 
-    private void addConfigurationTab(JBTabbedPane tabbedPane) {
-        FormBuilder configurationTab = addTab(tabbedPane, LanguageServerBundle.message("language.server.tab.configuration"), false);
-
-        JBTabbedPane configurationTabbedPane = new JBTabbedPane();
-        configurationTab.addComponentFillVertically(configurationTabbedPane, 0);
-
-        FormBuilder serverConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.server"), false);
-        createConfigurationField(serverConfigurationTab);
-        createInitializationOptionsTabField(serverConfigurationTab);
-
-        FormBuilder clientConfigurationTab = addTab(configurationTabbedPane, LanguageServerBundle.message("language.server.tab.configuration.client"), false);
-        createClientConfigurationField(clientConfigurationTab);
-    }
-
-    private static FormBuilder addTab(JBTabbedPane tabbedPane, String tabTitle) {
+    private static FormBuilder addTab(@NotNull JBTabbedPane tabbedPane,
+                                      @NotNull String tabTitle) {
         return addTab(tabbedPane, tabTitle, true);
     }
 
     @NotNull
-    private static FormBuilder addTab(JBTabbedPane tabbedPane, String tabTitle, boolean addToTop) {
+    private static FormBuilder addTab(@NotNull JBTabbedPane tabbedPane,
+                                      @NotNull String tabTitle, boolean addToTop) {
         FormBuilder builder = FormBuilder.createFormBuilder();
         var tabPanel = new BorderLayoutPanel();
         if (addToTop) {
@@ -206,12 +226,12 @@ public class LanguageServerPanel implements Disposable {
         return builder;
     }
 
-    private void createServerNameField(FormBuilder builder) {
+    private void createServerNameField(@NotNull FormBuilder builder) {
         serverName = new JBTextField();
         builder.addLabeledComponent(LanguageServerBundle.message("language.server.serverName"), serverName);
     }
 
-    private void createCommandLineField(FormBuilder builder) {
+    private void createCommandLineField(@NotNull FormBuilder builder) {
         commandLine = new CommandLineWidget();
         JBScrollPane scrollPane = new JBScrollPane(commandLine);
         scrollPane.setMinimumSize(new Dimension(JBUIScale.scale(600), JBUIScale.scale(100)));
@@ -269,8 +289,7 @@ public class LanguageServerPanel implements Disposable {
         return label;
     }
 
-    private void createConfigurationField(FormBuilder builder) {
-
+    private void createConfigurationField(@NotNull FormBuilder builder) {
         // Create the hyperlink "Edit JSON Schema" / "Associate with JSON Schema".
         editJsonSchemaAction = new HyperlinkLabel(LanguageServerBundle.message("language.server.configuration.json.schema.associate"));
         builder.addLabeledComponent(LanguageServerBundle.message("language.server.configuration"), editJsonSchemaAction);
@@ -288,17 +307,47 @@ public class LanguageServerPanel implements Disposable {
         builder.addComponentFillVertically(configurationWidget, 0);
     }
 
-    private void createInitializationOptionsTabField(FormBuilder builder) {
+    private void createInitializationOptionsTabField(@NotNull FormBuilder builder) {
         initializationOptionsWidget = new JsonTextField(project);
         builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.initializationOptions"), initializationOptionsWidget);
     }
 
-    private void createClientConfigurationField(FormBuilder builder) {
+    private void createClientConfigurationField(@NotNull FormBuilder builder) {
         clientConfigurationWidget = new JsonTextField(project);
         clientConfigurationWidget.setJsonFilename(LSPClientConfigurationJsonSchemaFileProvider.CLIENT_SETTINGS_JSON_FILE_NAME);
         builder.addLabeledComponentFillVertically(LanguageServerBundle.message("language.server.configuration"), clientConfigurationWidget);
     }
 
+    private void createInstallerConfigurationField(@NotNull FormBuilder builder) {
+
+        // Display on the left Json editor to fill installer.json content
+        HyperlinkLabel launchInstallerAction = new HyperlinkLabel(LanguageServerBundle.message("language.server.installer.launch"));
+        builder.addLabeledComponent(LanguageServerBundle.message("language.server.configuration"), launchInstallerAction);
+
+        installerConfigurationWidget = new JsonTextField(project);
+        installerConfigurationWidget.setJsonFilename(ServerInstallerJsonSchemaFileProvider.INSTALLER_JSON_FILE_NAME);
+
+        // Display on the right, console which shows traces of execution of installer
+        TextConsoleBuilder consoleBuilder  = TextConsoleBuilderFactory.getInstance().createBuilder(project);
+        ConsoleView console = consoleBuilder.getConsole();
+
+        OnePixelSplitter splitter = new OnePixelSplitter(false, 0.5f);
+        splitter.setShowDividerControls(true);
+        splitter.setHonorComponentsMinimumSize(true);
+        splitter.setFirstComponent(installerConfigurationWidget.getComponent());
+        splitter.setSecondComponent(console.getComponent());
+        builder.addComponentFillVertically(splitter, 0);
+
+        String title = "Install " + getServerName();
+        launchInstallerAction.addHyperlinkListener(e-> {
+            ServerInstallerManager
+                    .getInstance(project)
+                    .install(installerConfigurationWidget.getText(),
+                            title,
+                            new InstallerContext(project).setConsole(console));
+        });
+    }
+    
     public JBTextField getServerName() {
         return serverName;
     }
@@ -341,6 +390,10 @@ public class LanguageServerPanel implements Disposable {
 
     public JsonTextField getClientConfigurationWidget() {
         return clientConfigurationWidget;
+    }
+
+    public JsonTextField getInstallerConfigurationWidget() {
+        return installerConfigurationWidget;
     }
 
     public JBCheckBox getDebugSuspendCheckBox() {

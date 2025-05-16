@@ -16,12 +16,12 @@ package com.redhat.devtools.lsp4ij.settings.jsonSchema;
 /**
  * JSON schema file provider for language server client-side configuration.
  */
-public class LSPClientConfigurationJsonSchemaFileProvider extends AbstractLSPJsonSchemaFileSystemProvider {
+public class ServerInstallerJsonSchemaFileProvider extends AbstractLSPJsonSchemaFileSystemProvider {
 
-    private static final String CLIENT_SETTINGS_SCHEMA_JSON_PATH = "/jsonSchema/clientSettings.schema.json";
-    public static final String CLIENT_SETTINGS_JSON_FILE_NAME = "clientSettings.json";
+    private static final String INSTALLER_SETTINGS_SCHEMA_JSON_PATH = "/jsonSchema/installerSettings.schema.json";
+    public static final String INSTALLER_JSON_FILE_NAME = "installer.json";
 
-    LSPClientConfigurationJsonSchemaFileProvider() {
-        super(CLIENT_SETTINGS_SCHEMA_JSON_PATH, CLIENT_SETTINGS_JSON_FILE_NAME);
+    ServerInstallerJsonSchemaFileProvider() {
+        super(INSTALLER_SETTINGS_SCHEMA_JSON_PATH, INSTALLER_JSON_FILE_NAME);
     }
 }

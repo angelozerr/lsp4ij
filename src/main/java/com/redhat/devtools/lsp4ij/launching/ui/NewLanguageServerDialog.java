@@ -226,6 +226,11 @@ public class NewLanguageServerDialog extends DialogWrapper {
         var clientConfiguration = this.languageServerPanel.getClientConfigurationWidget();
         clientConfiguration.setText(template.getClientConfiguration() != null ? template.getClientConfiguration() : "");
         clientConfiguration.setCaretPosition(0);
+
+        // Update installer configuration
+        var installerConfiguration = this.languageServerPanel.getInstallerConfigurationWidget();
+        installerConfiguration.setText(template.getInstallerConfiguration() != null ? template.getInstallerConfiguration() : "");
+        installerConfiguration.setCaretPosition(0);
     }
 
     private static String getCommandLine(LanguageServerTemplate entry) {
@@ -300,6 +305,7 @@ public class NewLanguageServerDialog extends DialogWrapper {
         String configurationSchema = this.languageServerPanel.getConfigurationSchemaContent();
         String initializationOptions = this.languageServerPanel.getInitializationOptionsWidget().getText();
         String clientConfiguration = this.languageServerPanel.getClientConfigurationWidget().getText();
+        String installerConfiguration = this.languageServerPanel.getInstallerConfigurationWidget().getText();
         UserDefinedLanguageServerDefinition definition = new UserDefinedLanguageServerDefinition(serverId,
                 templateId,
                 serverName,
@@ -310,7 +316,8 @@ public class NewLanguageServerDialog extends DialogWrapper {
                 configuration,
                 configurationSchema,
                 initializationOptions,
-                clientConfiguration);
+                clientConfiguration,
+                installerConfiguration);
         LanguageServersRegistry.getInstance().addServerDefinition(project, definition, mappingSettings);
     }
 

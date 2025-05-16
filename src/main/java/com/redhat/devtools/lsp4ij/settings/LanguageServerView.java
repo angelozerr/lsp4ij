@@ -105,7 +105,8 @@ public class LanguageServerView implements Disposable {
                     && isEquals(this.getConfigurationContent(), settings.getConfigurationContent())
                     && isEquals(this.getConfigurationSchemaContent(), settings.getConfigurationSchemaContent())
                     && isEquals(this.getInitializationOptionsContent(), settings.getInitializationOptionsContent())
-                    && isEquals(this.getClientConfigurationContent(), settings.getClientConfigurationContent()))) {
+                    && isEquals(this.getClientConfigurationContent(), settings.getClientConfigurationContent())
+                    && isEquals(this.getInstallerConfigurationContent(), settings.getInstallerConfigurationContent()))) {
                 return true;
             }
         }
@@ -175,6 +176,7 @@ public class LanguageServerView implements Disposable {
                 this.setConfigurationSchemaContent(userDefinedLanguageServerSettings.getConfigurationSchemaContent());
                 this.setInitializationOptionsContent(userDefinedLanguageServerSettings.getInitializationOptionsContent());
                 this.setClientConfigurationContent(userDefinedLanguageServerSettings.getClientConfigurationContent());
+                this.setInstallerConfigurationContent(userDefinedLanguageServerSettings.getInstallerConfigurationContent());
 
                 List<ServerMappingSettings> languageMappings = userDefinedLanguageServerSettings.getMappings()
                         .stream()
@@ -277,7 +279,8 @@ public class LanguageServerView implements Disposable {
                                     getConfigurationContent(),
                                     getConfigurationSchemaContent(),
                                     getInitializationOptionsContent(),
-                                    getClientConfigurationContent()),
+                                    getClientConfigurationContent(),
+                                    getInstallerConfigurationContent()),
                             false);
             if (settingsChangedEvent != null) {
                 // Settings has changed, fire the event
@@ -450,6 +453,16 @@ public class LanguageServerView implements Disposable {
         clientConfiguration.setCaretPosition(0);
     }
 
+    public String getInstallerConfigurationContent() {
+        return languageServerPanel.getInstallerConfigurationWidget().getText();
+    }
+
+    public void setInstallerConfigurationContent(String configurationContent) {
+        var installerConfiguration = languageServerPanel.getInstallerConfigurationWidget();
+        installerConfiguration.setText(configurationContent);
+        installerConfiguration.setCaretPosition(0);
+    }
+    
     @Override
     public void dispose() {
         languageServerPanel.dispose();

@@ -224,6 +224,32 @@
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
     <idea-version since-build="233.*"/>
 
+    <!-- Server Installer support -->
+    <extensionPoints>
+
+        <!-- Installer step action factory -->
+        <extensionPoint
+                name="installerStepActionFactory"
+                beanClass="com.redhat.devtools.lsp4ij.installation.definition.InstallerStepActionFactoryPointBean">
+            <with attribute="factoryClass" implements="com.redhat.devtools.lsp4ij.installation.definition.InstallerStepActionFactory"/>
+        </extensionPoint>
+
+    </extensionPoints>
+
+    <extensions defaultExtensionNs="com.redhat.devtools.lsp4ij">
+        <installerStepActionFactory
+                type="exec"
+                factoryClass="com.redhat.devtools.lsp4ij.installation.definition.steps.ExecStepActionFactory" />
+        <installerStepActionFactory
+                type="showMessage"
+                factoryClass="com.redhat.devtools.lsp4ij.installation.definition.steps.ShowMessageStepActionFactory" />
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService
+            serviceImplementation="com.redhat.devtools.lsp4ij.installation.definition.ServerInstallerManager"/>
+    </extensions>
+
     <!-- LSP extension points -->
     <extensionPoints>
 

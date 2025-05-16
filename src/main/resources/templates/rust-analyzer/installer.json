@@ -1,0 +1,50 @@
+{
+  "id": "rust-analyzer-installer",
+  "name": "Install and verify rust-analyzer",
+  "steps": [
+    {
+      "exec": {
+        "name": "Check rust-analyzer",
+        "command": {
+          "windows": "where rust-analyzer",
+          "default": "which rust-analyzer"
+        },
+        "onFail": {
+          "showMessage": {
+            "name": "rust-analyzer is not installed. How do you want to install it?",
+            "actions": [
+              {
+                "exec": {
+                  "name": "Install via rustup",
+                  "command": {
+                    "default": ["rustup", "component", "add", "rust-analyzer"]
+                  }
+                }
+              },
+              {
+                "exec": {
+                  "name": "Install manually",
+                  "command": {
+                    "default": [
+                      "curl",
+                      "-L",
+                      "https://github.com/rust-lang/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz",
+                      "-o",
+                      "rust-analyzer.gz"
+                    ]
+                  }
+                }
+              },
+              {
+                "openUrl": {
+                  "name": "Visit rust-analyzer GitHub",
+                  "url": "https://github.com/rust-lang/rust-analyzer"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
