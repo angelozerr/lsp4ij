@@ -178,20 +178,18 @@ public class OSProcessStreamConnectionProvider implements StreamConnectionProvid
         }
     }
 
-    /**
-     * Returns true if the provider has been stopped with the {@link #stop()} method and false otherwise.
-     *
-     * @return true if the provider has been stopped with the {@link #stop()} method and false otherwise.
-     */
-    boolean isStopped() {
+    @Override
+    public boolean isStopped() {
         return stopped;
     }
 
-    List<LanguageServerLogErrorHandler> getHandlers() {
+    @Override
+    public List<LanguageServerLogErrorHandler> getHandlers() {
         return handlers;
     }
 
-    List<Runnable> getUnexpectedServerStopHandlers() {
+    @Override
+    public List<Runnable> getUnexpectedServerStopHandlers() {
         return unexpectedServerStopHandlers;
     }
 

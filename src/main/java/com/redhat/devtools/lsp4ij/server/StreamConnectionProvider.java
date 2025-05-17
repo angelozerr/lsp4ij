@@ -16,6 +16,8 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Stream connection provider API used to:
@@ -105,5 +107,23 @@ public interface StreamConnectionProvider {
             throw new CannotStartProcessException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
         }
     }
+
+    default List<LanguageServerLogErrorHandler> getHandlers() {
+        return Collections.emptyList();
+    }
+
+    default List<Runnable> getUnexpectedServerStopHandlers() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Returns true if the provider has been stopped with the {@link #stop()} method and false otherwise.
+     *
+     * @return true if the provider has been stopped with the {@link #stop()} method and false otherwise.
+     */
+    default boolean isStopped() {
+        return false;
+    }
+
 
 }

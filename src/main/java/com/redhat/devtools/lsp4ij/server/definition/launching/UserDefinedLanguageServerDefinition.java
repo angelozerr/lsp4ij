@@ -16,6 +16,7 @@ package com.redhat.devtools.lsp4ij.server.definition.launching;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
 import com.intellij.openapi.project.Project;
+import com.intellij.util.net.NetUtils;
 import com.redhat.devtools.lsp4ij.JSONUtils;
 import com.redhat.devtools.lsp4ij.client.LanguageClientImpl;
 import com.redhat.devtools.lsp4ij.client.features.LSPClientFeatures;
@@ -27,7 +28,9 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.StringReader;
+import java.net.InetAddress;
 import java.util.Map;
 
 import static com.redhat.devtools.lsp4ij.server.definition.launching.CommandUtils.resolveCommandLine;
@@ -102,12 +105,29 @@ public class UserDefinedLanguageServerDefinition extends LanguageServerDefinitio
     @Override
     public @NotNull StreamConnectionProvider createConnectionProvider(@NotNull Project project) {
         String resolvedCommandLine = resolveCommandLine(commandLine, project);
+        int index = resolvedCommandLine.indexOf("${port}");
+        if (index != -1) {
+            try {
+                int port = NetUtils.findAvailableSocketPort();
+                String host = InetAddress.getLoopbackAddress().getHostAddress();
+                resolvedCommandLine = resolvedCommandLine.replace("${port}", String.valueOf(port));
+                return new UserDefinedSocketStreamConnectionProvider(resolvedCommandLine,
+                        host, port,
+                        userEnvironmentVariables,
+                        includeSystemEnvironmentVariables,
+                        this,
+                        project);
+            } catch (IOException e) {
+                // Do nothing
+            }
+        }
         return new UserDefinedStreamConnectionProvider(resolvedCommandLine,
                 userEnvironmentVariables,
                 includeSystemEnvironmentVariables,
                 this,
                 project);
     }
+
 
     @Override
     public @NotNull LanguageClientImpl createLanguageClient(@NotNull Project project) {

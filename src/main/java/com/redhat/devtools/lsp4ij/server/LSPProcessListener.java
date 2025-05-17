@@ -29,9 +29,9 @@ class LSPProcessListener implements ProcessListener {
     private final PipedOutputStream outputStream;
     private final OutputStreamWriter outputStreamWriter;
     private final PipedInputStream inputStream;
-    private final @NotNull OSProcessStreamConnectionProvider provider;
+    private final @NotNull StreamConnectionProvider provider;
 
-    public LSPProcessListener(@NotNull OSProcessStreamConnectionProvider provider) throws IOException {
+    public LSPProcessListener(@NotNull StreamConnectionProvider provider) throws IOException {
         this.outputStream = new PipedOutputStream();
         this.outputStreamWriter = new OutputStreamWriter(this.outputStream, StandardCharsets.UTF_8);
         this.inputStream = new PipedInputStream(this.outputStream);

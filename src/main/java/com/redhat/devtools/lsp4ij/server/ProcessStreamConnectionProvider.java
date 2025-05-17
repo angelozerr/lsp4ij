@@ -137,6 +137,11 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
     }
 
     @Override
+    public boolean isStopped() {
+        return process == null;
+    }
+
+    @Override
     public List<String> getCommands() {
         return commands;
     }
