@@ -8,10 +8,12 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.lsp4ij.templates;
+package com.redhat.devtools.lsp4ij.templates.json;
 
 import com.google.gson.*;
 import com.redhat.devtools.lsp4ij.internal.StringUtils;
+import com.redhat.devtools.lsp4ij.templates.ServerMappingSettings;
+import com.redhat.devtools.lsp4ij.templates.ServerTemplate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

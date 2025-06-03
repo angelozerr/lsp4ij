@@ -13,13 +13,10 @@ package com.redhat.devtools.lsp4ij.launching.templates;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
-import com.redhat.devtools.lsp4ij.templates.ServerMappingSettings;
-import com.redhat.devtools.lsp4ij.templates.ServerTemplateJsonDeserializer;
+import com.redhat.devtools.lsp4ij.templates.json.ServerTemplateJsonDeserializer;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplate.*;
