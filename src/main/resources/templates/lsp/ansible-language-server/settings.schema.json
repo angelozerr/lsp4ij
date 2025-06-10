@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "LSP4IJ/clangd/settings.schema.json",
+  "title": "LSP4IJ clangd server settings JSON schema",
+  "description": "JSON schema for clangd server settings.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "ansible.ansible.path": {
+      "type": "string",
+      "default": "ansible",
+      "order": 0,
+      "description": "Path to the ansible executable. All subcommands are expected to have adjacent locations."
+    },
+    "ansible.ansible.useFullyQualifiedCollectionNames": {
+      "type": "boolean",
+      "default": true,
+      "order": 1,
+      "description": "Always use fully qualified collection names (FQCN) when inserting a module name. Disabling it will only use FQCNs when necessary."
+    },
+    "ansible.ansible.reuseTerminal": {
+      "type": "boolean",
+      "default": false,
+      "order": 2,
+      "description": "Enabling this will cause ansible commands run through VS Code to reuse the same Ansible Terminal."
+    },
+    "ansible.python.interpreterPath": {
+      "type": "string",
+      "default": "",
+      "order": 0,
+      "description": "Path to the Python interpreter executable. Particularly important if you are using a Python virtual environment. Leave blank to use Python from PATH."
+    },
+    "ansible.python.activationScript": {
+      "type": "string",
+      "default": "",
+      "order": 1,
+      "description": "Path to the virtual environment activation script. Use only if you have a custom activation script. It will be sourced using bash before executing Ansible commands. When set, the Interpreter Path setting is ignored."
+    },
+    "ansible.ansibleNavigator.path": {
+      "default": "ansible-navigator",
+      "order": 0,
+      "type": "string",
+      "description": "%configuration.navigate.executablePath%"
+    },
+    "ansible.playbook.arguments": {
+      "default": "",
+      "order": 0,
+      "type": "string",
+      "description": "%configuration.playbook.arguments%"
+    },
+    "ansible.completion.provideRedirectModules": {
+      "type": "boolean",
+      "default": true,
+      "order": 0,
+      "description": "Toggle redirected module provider when completing modules."
+    },
+    "ansible.completion.provideModuleOptionAliases": {
+      "type": "boolean",
+      "default": true,
+      "order": 1,
+      "description": "Toggle alias provider when completing module options."
+    },
+    "ansible.validation.enabled": {
+      "type": "boolean",
+      "default": true,
+      "order": 0,
+      "description": "If disabled no validation will be performed."
+    },
+    "ansible.validation.lint.enabled": {
+      "type": "boolean",
+      "default": true,
+      "order": 1,
+      "description": "Enables `ansible-lint`. If disabled only `ansible-playbook --syntax-check` will run. Requires `#ansible.validation.enabled#` to be enabled."
+    },
+    "ansible.validation.lint.path": {
+      "type": "string",
+      "default": "ansible-lint",
+      "order": 2,
+      "description": "Path to the ansible-lint executable."
+    },
+    "ansible.validation.lint.arguments": {
+      "type": "string",
+      "default": "",
+      "order": 3,
+      "description": "Command line arguments to be passed to ansible-lint."
+    },
+    "ansible.executionEnvironment.enabled": {
+      "type": "boolean",
+      "default": false,
+      "order": 0,
+      "description": "Enable or disable the use of an execution environment."
+    },
+    "ansible.executionEnvironment.containerEngine": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "podman",
+        "docker"
+      ],
+      "default": "auto",
+      "order": 1,
+      "description": "Specify the container engine (auto\u003dpodman then docker)."
+    },
+    "ansible.executionEnvironment.containerOptions": {
+      "type": "string",
+      "default": "",
+      "order": 2,
+      "description": "Extra parameters passed to the container engine command example: `--net\u003dhost`."
+    },
+    "ansible.executionEnvironment.image": {
+      "type": "string",
+      "default": "ghcr.io/ansible/community-ansible-dev-tools:latest",
+      "order": 3,
+      "description": "Specify the name of the execution environment image."
+    },
+    "ansible.executionEnvironment.pull.arguments": {
+      "type": "string",
+      "default": "",
+      "order": 4,
+      "description": "Specify any additional parameters that should be added to the pull command when pulling an execution environment from a container registry. e.g. `–-tls-verify\u003dfalse`."
+    },
+    "ansible.executionEnvironment.pull.policy": {
+      "type": "string",
+      "enum": [
+        "always",
+        "missing",
+        "never",
+        "tag"
+      ],
+      "default": "missing",
+      "order": 5,
+      "description": "Specify the image pull policy.\n**always**: Always pull the image when extension is activated or reloaded\n**missing**: Pull if not locally available\n**never**: Never pull the image\n**tag**: If the image tag is `latest`, always pull the image, otherwise pull if not locally available."
+    },
+    "ansible.executionEnvironment.volumeMounts": {
+      "type": "array",
+      "default": [],
+      "order": 6,
+      "description": "Add a dictionary entry to the array with the volume mount source path (key: \u0027src\u0027), destination (key: \u0027dest\u0027), and options (key: \u0027options\u0027)"
+    },
+    "redhat.telemetry.enabled": {
+      "type": "boolean",
+      "order": 0,
+      "tags": [
+        "telemetry",
+        "usesOnlineServices"
+      ],
+      "description": "Enable usage data and errors to be sent to Red Hat servers. Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection)."
+    },
+    "ansible.lightspeed.enabled": {
+      "type": "boolean",
+      "default": true,
+      "order": 0,
+      "description": "Enable Ansible Lightspeed."
+    },
+    "ansible.lightspeed.URL": {
+      "type": "string",
+      "default": "https://c.ai.ansible.redhat.com",
+      "order": 1,
+      "description": "URL for Ansible Lightspeed."
+    },
+    "ansible.lightspeed.suggestions.enabled": {
+      "type": "boolean",
+      "default": true,
+      "order": 2,
+      "description": "Enable Ansible Lightspeed with watsonx Code Assistant inline suggestions."
+    },
+    "ansible.lightspeed.suggestions.waitWindow": {
+      "type": "number",
+      "default": 0,
+      "order": 3,
+      "description": "Delay (in msecs) prior to sending an inline suggestion request to Ansible Lightspeed with watsonx Code Assistant."
+    },
+    "ansible.lightspeed.modelIdOverride": {
+      "type": "string",
+      "order": 4,
+      "description": "Model ID to override your organization\u0027s default model. This setting is only applicable to commercial users with an Ansible Lightspeed seat assignment."
+    },
+    "ansibleServer.trace.server": {
+      "type": "string",
+      "enum": [
+        "off",
+        "messages",
+        "verbose"
+      ],
+      "default": "off",
+      "order": 0,
+      "description": "Traces the communication between editor and the ansible language server."
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "ansible-language-server",
+  "name": "Ansible Language Server",
+  "executeOnStartServer": false,
+  "properties": {
+    "workingDir": "$USER_HOME$/.lsp4ij/lsp/ansible-language-server"
+  },
+  "check": {
+    "exec": {
+      "name": "Check if Ansible Language Server is available",
+      "command": "${server.command}",
+      "timeout": 2000
+    }
+  },
+  "run": {
+    "exec": {
+      "name": "Install Ansible Language Server (via npm)",
+      "workingDir": "${workingDir}",
+      "ignoreStderr": true,
+      "command": {
+        "windows": "npm.cmd install @ansible/ansible-language-server --force",
+        "default": "npm install @ansible/ansible-language-server --force"
+      },
+      "onSuccess": {
+        "exec": {
+          "name": "Create venv & install",
+          "command": {
+            "default": "bash -c \"python3 -m venv .venv && .venv/bin/pip install ansible ansible-lint\"",
+            "windows": "cmd /c \"python -m venv .venv && .venv\\Scripts\\pip install ansible ansible-lint\""
+          },
+          "workingDir": "${workingDir}",
+          "ignoreStderr": true,
+          "onSuccess": {
+            "configureServer": {
+              "name": "Configure Ansible Language Server",
+              "command": {
+                "windows": "${workingDir}/node_modules/.bin/ansible-language-server.cmd --stdio",
+                "default": "${workingDir}/node_modules/.bin/ansible-language-server --stdio"
+              },
+              "update": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

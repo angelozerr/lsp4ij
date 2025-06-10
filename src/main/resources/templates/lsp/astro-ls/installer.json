@@ -1,5 +1,5 @@
 {
-  "id": "astro",
+  "id": "astro-ls",
   "name": "Astro Language Server",
   "executeOnStartServer": false,
   "properties": {

@@ -1,0 +1,28 @@
+{
+  "id": "ansible-language-server",
+  "name": "Ansible Language Server",
+  "programArgs": {
+    "windows": "ansible-language-server.cmd --stdio",
+    "default": "ansible-language-server --stdio"
+  },
+  "expandConfiguration": true,
+  "fileTypeMappings": [
+    {
+      "fileType": {
+        "patterns": [
+          "*.ansible.yml",
+          "*.ansible.yaml",
+          "**/playbooks/*.yml",
+          "**/playbooks/*.yaml",
+          "**/*playbook*.yml",
+          "**/*playbook*.yaml",
+          "**/roles/**/main.yml",
+          "**/roles/**/main.yaml",
+          "site.yml",
+          "site.yaml"
+        ]
+      },
+      "languageId": "ansible"
+    }
+  ]
+}
