@@ -33,7 +33,7 @@ public interface ServerInstaller {
      * @return A {@link Runnable} task to execute before installation, or {@code null} if no task is defined.
      */
     @Nullable
-    default Runnable getBeforeCode() {
+    default Runnable getBeforeCode(@NotNull ServerInstallerContext context) {
         return null;
     }
 
@@ -43,7 +43,7 @@ public interface ServerInstaller {
      * @return A {@link Runnable} task to execute after installation, or {@code null} if no task is defined.
      */
     @Nullable
-    default Runnable getAfterCode() {
+    default Runnable getAfterCode(@NotNull ServerInstallerContext context) {
         return null;
     }
 

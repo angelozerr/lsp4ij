@@ -16,9 +16,6 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.redhat.devtools.lsp4ij.LanguageServerBundle;
-import com.redhat.devtools.lsp4ij.ServerStatus;
-import com.redhat.devtools.lsp4ij.client.features.LSPClientFeatureAware;
-import com.redhat.devtools.lsp4ij.client.features.LSPClientFeatures;
 import com.redhat.devtools.lsp4ij.internal.CancellationSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -105,6 +102,7 @@ public abstract class ServerInstallerBase implements ServerInstaller {
         ProgressManager.getInstance().run(new Task.Backgroundable(getProject(), getInstallationTaskTitle(), canBeCancelled()) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
+                @NotNull ServerInstallerContext context = new ServerInstallerContext();
                 try {
                     indicator.setIndeterminate(false);
                     if (status == ServerInstallationStatus.NOT_INSTALLED) {
@@ -115,8 +113,8 @@ public abstract class ServerInstallerBase implements ServerInstaller {
                     ProgressManager.checkCanceled();
 
                     // Checking if the server is installed
-                    if (checkServerInstalled(indicator)) {
-                        markAsInstalled(installFuture);
+                    if (checkServerInstalled(context, indicator)) {
+                        markAsInstalled(context, installFuture);
                         return;
                     }
 
@@ -127,7 +125,7 @@ public abstract class ServerInstallerBase implements ServerInstaller {
                     progressInstallingServer(indicator);
                     updateStatus(ServerInstallationStatus.INSTALLING);
 
-                    var beforeCode = getBeforeCode();
+                    var beforeCode = getBeforeCode(context);
                     if (beforeCode != null) {
                         beforeCode.run();
                     }
@@ -137,7 +135,7 @@ public abstract class ServerInstallerBase implements ServerInstaller {
                     // Process the installation
                     install(indicator);
 
-                    markAsInstalled(installFuture);
+                    markAsInstalled(context, installFuture);
                 } catch (ProcessCanceledException e) {
                     //Since 2024.2 ProcessCanceledException extends CancellationException so we can't use multicatch to keep backward compatibility
                     //TODO delete block when minimum required version is 2024.2
@@ -157,9 +155,10 @@ public abstract class ServerInstallerBase implements ServerInstaller {
         this.status = status;
     }
 
-    private void markAsInstalled(@NotNull CompletableFuture<ServerInstallationStatus> installFuture) {
+    private void markAsInstalled(@NotNull ServerInstallerContext context,
+                                 @NotNull CompletableFuture<ServerInstallationStatus> installFuture) {
         updateStatus(ServerInstallationStatus.INSTALLED);
-        var afterCode = getAfterCode();
+        var afterCode = getAfterCode(context);
         if (afterCode != null) {
             afterCode.run();
         }
@@ -246,7 +245,34 @@ public abstract class ServerInstallerBase implements ServerInstaller {
      * @param indicator the progress indicator to update during the check.
      * @return true if the server is installed, false otherwise.
      */
+    protected boolean checkServerInstalled(@NotNull ServerInstallerContext context,
+                                           @NotNull ProgressIndicator indicator) throws Exception {
+        return checkServerInstalled(indicator);
+    }
+
+    /**
+     * Checks if the server is installed.
+     * <p>
+     * Subclasses should implement this method to provide the logic for checking if the server
+     * is already installed.
+     *
+     * @param indicator the progress indicator to update during the check.
+     * @return true if the server is installed, false otherwise.
+     */
     protected abstract boolean checkServerInstalled(@NotNull ProgressIndicator indicator) throws Exception;
+
+    /**
+     * Performs the actual installation of the server.
+     * <p>
+     * Subclasses should implement this method to define the installation process.
+     *
+     * @param indicator the progress indicator to update during the installation.
+     * @throws Exception if an error occurs during installation.
+     */
+    protected void install(@NotNull ServerInstallerContext context,
+                           @NotNull ProgressIndicator indicator) throws Exception {
+        install(indicator);
+    }
 
     /**
      * Performs the actual installation of the server.

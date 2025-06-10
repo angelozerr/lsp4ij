@@ -13,6 +13,7 @@ package com.redhat.devtools.lsp4ij.installation.definition.tasks;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.*;
 import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.util.Key;
@@ -114,6 +115,9 @@ public class ExecTask extends InstallerTask {
                     }
                 }
             });
+
+            // Check if user has canceled the server installer task
+            ProgressManager.checkCanceled();
 
             ProcessOutput result = timeout != null ? handler.runProcess(timeout) : handler.runProcess();
             if (result.isCancelled()) {

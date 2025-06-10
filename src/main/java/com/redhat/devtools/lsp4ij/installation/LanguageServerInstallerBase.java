@@ -47,8 +47,10 @@ public abstract class LanguageServerInstallerBase extends ServerInstallerBase im
         };
     }
 
+
+
     @Override
-    public @Nullable Runnable getAfterCode() {
+    public @Nullable Runnable getAfterCode(@NotNull ServerInstallerContext context) {
         if (isStartServerAfterInstallation()) {
             return () -> {
                 // The language server is installed, start the language server

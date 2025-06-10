@@ -12,9 +12,11 @@ package com.redhat.devtools.lsp4ij.installation.definition.tasks;
 
 import com.google.gson.JsonObject;
 import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.util.system.CpuArch;
+import com.redhat.devtools.lsp4ij.installation.ServerInstallerContext;
 import com.redhat.devtools.lsp4ij.installation.definition.InstallerContext;
 import com.redhat.devtools.lsp4ij.installation.definition.InstallerTask;
 import com.redhat.devtools.lsp4ij.installation.definition.ServerInstallerDescriptor;
@@ -107,12 +109,18 @@ public class DownloadTask extends InstallerTask {
             DownloadUtils.download(downloadUrl, downloadedAsset, context.getProgressIndicator());
             context.print("\nDownloaded asset done in " + downloadedAsset.toString());
 
+            // Check if user has canceled the server installer task
+            ProgressManager.checkCanceled();
+
             // Create output directory where downloaded file must be extracted
             String dir = getDir();
             var project = context.getProject();
             String resolvedDir = CommandUtils.resolveCommandLine(dir, project);
             Path outputDir = Paths.get(resolvedDir);
             Files.createDirectories(outputDir);
+
+            // Check if user has canceled the server installer task
+            ProgressManager.checkCanceled();
 
             String outputFileName = outputInfo != null ? outputInfo.fileName() : null;
             Path decompressedDir = null;
@@ -125,6 +133,9 @@ public class DownloadTask extends InstallerTask {
                 context.print("Extracted asset done");
                 extracted = true;
             }
+
+            // Check if user has canceled the server installer task
+            ProgressManager.checkCanceled();
 
             if (extracted) {
                 // Downloaded asset is a zip, tar, etc file
@@ -157,6 +168,9 @@ public class DownloadTask extends InstallerTask {
             // Update ${output.dir} property
             context.putProperty("output.dir", dir);
 
+            // Check if user has canceled the server installer task
+            ProgressManager.checkCanceled();
+
             if (outputFileName != null) {
                 // Update ${output.file.name} property
                 context.putProperty("output.file.name", outputFileName);
@@ -173,6 +187,9 @@ public class DownloadTask extends InstallerTask {
                     context.printError(htmlError, true);
                     return false;
                 }
+                // Check if user has canceled the server installer task
+                ProgressManager.checkCanceled();
+
                 if (outputInfo != null && outputInfo.executable()) {
                     // Set executable permission
                     context.print("> Setting executable permission for: " + exeFile.toString());
