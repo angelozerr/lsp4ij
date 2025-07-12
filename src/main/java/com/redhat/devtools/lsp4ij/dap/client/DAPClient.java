@@ -587,6 +587,13 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
         return debugProtocolServer.setVariable(args);
     }
 
+    // Threads
+
+    @Override
+    public void thread(ThreadEventArguments args) {
+        debugProcess.refreshThread(args);
+    }
+
     // Capabilities
 
 
