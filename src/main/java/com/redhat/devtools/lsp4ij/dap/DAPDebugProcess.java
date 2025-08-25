@@ -17,6 +17,7 @@ import com.intellij.execution.ui.ExecutionConsole;
 import com.intellij.execution.ui.RunnerLayoutUi;
 import com.intellij.execution.ui.layout.PlaceInGrid;
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -27,6 +28,7 @@ import com.intellij.openapi.util.NlsContexts;
 import com.intellij.ui.AppUIUtil;
 import com.intellij.ui.content.Content;
 import com.intellij.util.ui.FormBuilder;
+import com.intellij.xdebugger.XAlternativeSourceHandler;
 import com.intellij.xdebugger.XDebugProcess;
 import com.intellij.xdebugger.XDebugSession;
 import com.intellij.xdebugger.XSourcePosition;
@@ -45,6 +47,8 @@ import com.redhat.devtools.lsp4ij.dap.client.DAPStackFrame;
 import com.redhat.devtools.lsp4ij.dap.client.DAPSuspendContext;
 import com.redhat.devtools.lsp4ij.dap.configurations.DAPCommandLineState;
 import com.redhat.devtools.lsp4ij.dap.descriptors.DebugAdapterDescriptor;
+import com.redhat.devtools.lsp4ij.dap.disassembly.DAPAlternativeSourceHandler;
+import com.redhat.devtools.lsp4ij.dap.disassembly.DAPDisassemblyView;
 import com.redhat.devtools.lsp4ij.dap.threads.ThreadsPanel;
 import com.redhat.devtools.lsp4ij.internal.CancellationSupport;
 import com.redhat.devtools.lsp4ij.internal.CompletableFutures;
@@ -70,6 +74,8 @@ import java.util.function.Supplier;
  */
 public class DAPDebugProcess extends XDebugProcess {
 
+    private DAPDisassemblyView disassemblyView;
+
     private enum Status {
         NONE,
         STARTING,
@@ -92,6 +98,8 @@ public class DAPDebugProcess extends XDebugProcess {
     private DAPClient parentClient;
 
     private final ThreadsPanel threadsPanel;
+
+    private boolean disassemblyWindowOpen = false;
 
     public DAPDebugProcess(@NotNull DAPCommandLineState dapState,
                            @NotNull XDebugSession session,
@@ -473,4 +481,24 @@ public class DAPDebugProcess extends XDebugProcess {
     public void refreshThread(ThreadEventArguments args) {
         threadsPanel.refreshThread(args);
     }
+
+    @Override
+    public @Nullable XAlternativeSourceHandler getAlternativeSourceHandler() {
+        if (disassemblyWindowOpen && parentClient!= null && parentClient.canDisassemble()) {
+            return new DAPAlternativeSourceHandler(this);
+        }
+        return null;
+    }
+
+    public void setDisassemblyWindowOpen(boolean disassemblyWindowOpen) {
+        this.disassemblyWindowOpen = disassemblyWindowOpen;
+    }
+
+    public DAPDisassemblyView getDisassemblyView() {
+        if (disassemblyView == null) {
+            disassemblyView = new DAPDisassemblyView(this.getSession().getProject());
+        }
+        return disassemblyView;
+    }
+
 }
