@@ -27,24 +27,24 @@ import com.intellij.openapi.util.NlsContexts;
 import com.intellij.ui.AppUIUtil;
 import com.intellij.ui.content.Content;
 import com.intellij.util.ui.FormBuilder;
+import com.intellij.xdebugger.XAlternativeSourceHandler;
 import com.intellij.xdebugger.XDebugProcess;
 import com.intellij.xdebugger.XDebugSession;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.breakpoints.XBreakpointHandler;
-import com.intellij.xdebugger.breakpoints.XBreakpointProperties;
-import com.intellij.xdebugger.breakpoints.XLineBreakpoint;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
 import com.intellij.xdebugger.frame.XStackFrame;
 import com.intellij.xdebugger.frame.XSuspendContext;
 import com.intellij.xdebugger.ui.XDebugTabLayouter;
 import com.redhat.devtools.lsp4ij.dap.breakpoints.DAPBreakpointHandlerBase;
-import com.redhat.devtools.lsp4ij.dap.breakpoints.DAPBreakpointProperties;
 import com.redhat.devtools.lsp4ij.dap.breakpoints.DAPExceptionBreakpointsPanel;
 import com.redhat.devtools.lsp4ij.dap.client.DAPClient;
 import com.redhat.devtools.lsp4ij.dap.client.DAPStackFrame;
 import com.redhat.devtools.lsp4ij.dap.client.DAPSuspendContext;
 import com.redhat.devtools.lsp4ij.dap.configurations.DAPCommandLineState;
 import com.redhat.devtools.lsp4ij.dap.descriptors.DebugAdapterDescriptor;
+import com.redhat.devtools.lsp4ij.dap.disassembly.DAPAlternativeSourceHandler;
+import com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyView;
 import com.redhat.devtools.lsp4ij.dap.threads.ThreadsPanel;
 import com.redhat.devtools.lsp4ij.internal.CancellationSupport;
 import com.redhat.devtools.lsp4ij.internal.CompletableFutures;
@@ -70,6 +70,8 @@ import java.util.function.Supplier;
  */
 public class DAPDebugProcess extends XDebugProcess {
 
+    private DisassemblyView disassemblyView;
+
     private enum Status {
         NONE,
         STARTING,
@@ -92,6 +94,8 @@ public class DAPDebugProcess extends XDebugProcess {
     private DAPClient parentClient;
 
     private final ThreadsPanel threadsPanel;
+
+    private boolean disassemblyWindowOpen = false;
 
     public DAPDebugProcess(@NotNull DAPCommandLineState dapState,
                            @NotNull XDebugSession session,
@@ -473,4 +477,21 @@ public class DAPDebugProcess extends XDebugProcess {
     public void refreshThread(ThreadEventArguments args) {
         threadsPanel.refreshThread(args);
     }
+
+    @Override
+    public @Nullable XAlternativeSourceHandler getAlternativeSourceHandler() {
+        if (disassemblyWindowOpen && parentClient!= null && parentClient.canDisassemble()) {
+            return new DAPAlternativeSourceHandler(this);
+        }
+        return null;
+    }
+
+    public void setDisassemblyWindowOpen(boolean disassemblyWindowOpen) {
+        this.disassemblyWindowOpen = disassemblyWindowOpen;
+    }
+
+    public DisassemblyView getDisassemblyView() {
+        return DisassemblyView.getDisassemblyView(this.getSession().getProject());
+    }
+
 }

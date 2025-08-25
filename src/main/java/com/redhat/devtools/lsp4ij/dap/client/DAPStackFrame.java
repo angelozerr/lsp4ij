@@ -23,7 +23,6 @@ import com.intellij.xdebugger.evaluation.XDebuggerEvaluator;
 import com.intellij.xdebugger.frame.XCompositeNode;
 import com.intellij.xdebugger.frame.XStackFrame;
 import com.intellij.xdebugger.frame.XValueChildrenList;
-import com.redhat.devtools.lsp4ij.dap.DAPIJUtils;
 import com.redhat.devtools.lsp4ij.dap.client.variables.DAPValueGroup;
 import com.redhat.devtools.lsp4ij.dap.client.variables.providers.DebugVariableContext;
 import com.redhat.devtools.lsp4ij.dap.evaluation.DAPDebuggerEvaluator;
@@ -164,6 +163,10 @@ public class DAPStackFrame extends XStackFrame {
         return stackFrame.getId();
     }
 
+    public String getInstructionPointer() {
+        return stackFrame.getInstructionPointerReference();
+    }
+
     @Override
     public @Nullable XDebuggerEvaluator getEvaluator() {
         if (evaluator == null) {
@@ -171,4 +174,5 @@ public class DAPStackFrame extends XStackFrame {
         }
         return evaluator;
     }
+
 }

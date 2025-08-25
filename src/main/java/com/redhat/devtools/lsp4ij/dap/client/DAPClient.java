@@ -654,6 +654,11 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
         return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsSetVariable());
     }
 
+    public boolean canDisassemble() {
+        var capabilities = getCapabilities();
+        return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsDisassembleRequest());
+    }
+
     @NotNull
     public DebugAdapterDescriptor getServerDescriptor() {
         return debugProcess.getServerDescriptor();
