@@ -57,6 +57,7 @@ public abstract class DebugAdapterDescriptor implements DebuggableFile {
     protected static final String $_PORT = "${port}";
 
     protected static final @NotNull Key<Integer> SERVER_PORT = Key.create("dap.server.port");
+    public static final int DEFAULT_STACK_TRACE_LEVELS = 5;
 
     protected final @NotNull RunConfigurationOptions options;
     protected final @NotNull ExecutionEnvironment environment;
@@ -299,5 +300,9 @@ public abstract class DebugAdapterDescriptor implements DebuggableFile {
      */
     public boolean isShowInstallerTab() {
         return false;
+    }
+
+    public int getStackTraceLevels() {
+        return DEFAULT_STACK_TRACE_LEVELS;
     }
 }

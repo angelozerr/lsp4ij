@@ -33,9 +33,11 @@ public class DAPSuspendContext extends XSuspendContext {
         this.client = client;
     }
 
-    public void addToExecutionStack(@NotNull Thread thread, @Nullable StackFrame[] stackFrames) {
+    public void addToExecutionStack(@NotNull Thread thread,
+                                    @Nullable StackFrame[] stackFrames,
+                                    @Nullable Integer totalFrames) {
         // Convert DAP stack frames to IJ stack frames
-        DAPExecutionStack stack = new DAPExecutionStack(client, this, thread, stackFrames);
+        DAPExecutionStack stack = new DAPExecutionStack(client, this, thread, stackFrames, totalFrames);
         myExecutionStacks.add(stack);
         if (stackFrames != null) {
             setActiveExecutionStack(stack);

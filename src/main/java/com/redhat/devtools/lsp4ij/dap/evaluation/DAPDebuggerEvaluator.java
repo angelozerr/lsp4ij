@@ -143,9 +143,15 @@ public class DAPDebuggerEvaluator extends XDebuggerEvaluator {
     ) {
         return ReadAction.nonBlocking(() -> {
 
+                    var client = stackFrame.getClient();
                     var file = LSPIJUtils.getFile(document);
-                    if (file == null || !stackFrame.getClient().getServerDescriptor().isDebuggableFile(file, project)) {
+                    if (file == null || !client.getServerDescriptor().isDebuggableFile(file, project)) {
                         // The current document which is hovered is not managed by the DAP server from the current stack frame
+                        return null;
+                    }
+
+                    if (!client.isSupportsEvaluateForHovers()) {
+                        // The DAP server cannot support evaluate for hovers
                         return null;
                     }
 

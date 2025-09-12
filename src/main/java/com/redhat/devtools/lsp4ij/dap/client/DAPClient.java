@@ -98,12 +98,12 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
     private final boolean isDebug;
     private final @NotNull DebugMode debugMode;
     private final @NotNull ServerTrace serverTrace;
+    private @NotNull
+    final List<DAPClient> childrenClient;
     private boolean isConnected;
     private Future<Void> debugProtocolFuture;
     private IDebugProtocolServer debugProtocolServer;
     private @Nullable Capabilities capabilities;
-    private @NotNull
-    final List<DAPClient> childrenClient;
     private boolean sentTerminateRequest;
 
     public DAPClient(@NotNull DAPDebugProcess debugProcess,
@@ -120,6 +120,44 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
         this.serverTrace = serverTrace;
         this.parentClient = parentClient;
         this.childrenClient = new ArrayList<>();
+    }
+
+    private static ConsoleViewContentType getContentType(String category) {
+        if (category != null) {
+            switch (category) {
+                case OutputEventArgumentsCategory.STDERR:
+                    return ConsoleViewContentType.LOG_ERROR_OUTPUT;
+                case OutputEventArgumentsCategory.IMPORTANT:
+                    return ConsoleViewContentType.LOG_VERBOSE_OUTPUT;
+                case OutputEventArgumentsCategory.TELEMETRY:
+                    return ConsoleViewContentType.LOG_DEBUG_OUTPUT;
+                default:
+                    return ConsoleViewContentType.LOG_INFO_OUTPUT;
+            }
+        }
+        return ConsoleViewContentType.LOG_INFO_OUTPUT;
+    }
+
+    static void showErrorHint(@NotNull Editor editor, @NotNull String text, int offset) {
+        if (ApplicationManager.getApplication().isUnitTestMode()) {
+            return;
+        }
+        if (ApplicationManager.getApplication().isDispatchThread()) {
+            doShowErrorHint(editor, text, offset);
+        } else {
+            ApplicationManager.getApplication()
+                    .invokeLater(() -> doShowErrorHint(editor, text, offset));
+        }
+    }
+
+    private static void doShowErrorHint(@NotNull Editor editor, @NotNull String hintText, int offset) {
+        JComponent label = HintUtil.createErrorLabel(hintText);
+        LightweightHint hint = new LightweightHint(label);
+        final VisualPosition pos1 = editor.offsetToVisualPosition(offset);
+        final Point p = getHintPosition(hint, editor, pos1, HintManager.DEFAULT);
+        int hintFlags = HintManager.HIDE_BY_OTHER_HINT | HintManager.HIDE_BY_ESCAPE | HintManager.UPDATE_BY_SCROLLING;
+        HintManagerImpl.getInstanceImpl()
+                .showEditorHint(hint, editor, p, hintFlags, 50000, false);
     }
 
     @NotNull
@@ -258,6 +296,14 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
         return debugProtocolServer;
     }
 
+    public CompletableFuture<StackTraceResponse> stackTrace(int threadId, int startFrame) {
+        StackTraceArguments args = new StackTraceArguments();
+        args.setThreadId(threadId);
+        args.setStartFrame(startFrame);
+        args.setLevels(getServerDescriptor().getStackTraceLevels());
+        return getDebugProtocolServer()
+                .stackTrace(args);
+    }
 
     /**
      * Return the Capabilities of the currently attached debug adapter.
@@ -266,11 +312,11 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
      * initialized.
      *
      * @return the current capabilities if they have been retrieved, or else
-     * return @{code null}
+     * return a default capabilities
      */
-    @Nullable
+    @NotNull
     Capabilities getCapabilities() {
-        return capabilitiesFuture.getNow(null);
+        return capabilitiesFuture.getNow(new Capabilities());
     }
 
     protected Launcher<? extends IDebugProtocolServer> createLauncher(UnaryOperator<MessageConsumer> wrapper,
@@ -305,25 +351,10 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
         }
     }
 
-    private static ConsoleViewContentType getContentType(String category) {
-        if (category != null) {
-            switch (category) {
-                case OutputEventArgumentsCategory.STDERR:
-                    return ConsoleViewContentType.LOG_ERROR_OUTPUT;
-                case OutputEventArgumentsCategory.IMPORTANT:
-                    return ConsoleViewContentType.LOG_VERBOSE_OUTPUT;
-                case OutputEventArgumentsCategory.TELEMETRY:
-                    return ConsoleViewContentType.LOG_DEBUG_OUTPUT;
-                default:
-                    return ConsoleViewContentType.LOG_INFO_OUTPUT;
-            }
-        }
-        return ConsoleViewContentType.LOG_INFO_OUTPUT;
-    }
-
     @Override
     public CompletableFuture<RunInTerminalResponse> runInTerminal(@NotNull RunInTerminalRequestArguments args) {
-        return RunInTerminalManager.getInstance(getProject()).runInTerminal(args, this);
+        return RunInTerminalManager.getInstance(getProject())
+                .runInTerminal(args, this);
     }
 
     @Override
@@ -360,10 +391,7 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
                     }
                     var activeThread = threadResult.get();
                     // get the stack trace
-                    StackTraceArguments stackTraceArgs = new StackTraceArguments();
-                    stackTraceArgs.setThreadId(args.getThreadId());
-                    server
-                            .stackTrace(stackTraceArgs)
+                    stackTrace(args.getThreadId(), 0)
                             .thenAcceptAsync(stackTraceResponse -> {
                                 StackFrame[] stackFrames = stackTraceResponse.getStackFrames();
                                 if (stackFrames != null && stackFrames.length > 0) {
@@ -375,8 +403,9 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
                                     }
                                     // Create an execution stack per thread and
                                     // initialize the stack with current DAP stack frames for the active thread
-                                    for(var thread : threads) {
-                                        ((DAPSuspendContext) context).addToExecutionStack(thread, thread.equals(activeThread) ? stackFrames : null);
+                                    for (var thread : threads) {
+                                        boolean active = thread.equals(activeThread);
+                                        ((DAPSuspendContext) context).addToExecutionStack(thread, active ? stackFrames : null, active ? stackTraceResponse.getTotalFrames() : null);
                                     }
                                     XDebugSession session = getSession();
                                     if (breakpoint == null) {
@@ -421,29 +450,6 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
                             });
                 });
     }
-
-    static void showErrorHint(@NotNull Editor editor, @NotNull String text, int offset) {
-        if (ApplicationManager.getApplication().isUnitTestMode()) {
-            return;
-        }
-        if (ApplicationManager.getApplication().isDispatchThread()) {
-            doShowErrorHint(editor, text, offset);
-        } else {
-            ApplicationManager.getApplication()
-                    .invokeLater(() -> doShowErrorHint(editor, text, offset));
-        }
-    }
-
-    private static void doShowErrorHint(@NotNull Editor editor, @NotNull String hintText, int offset) {
-        JComponent label = HintUtil.createErrorLabel(hintText);
-        LightweightHint hint = new LightweightHint(label);
-        final VisualPosition pos1 = editor.offsetToVisualPosition(offset);
-        final Point p = getHintPosition(hint, editor, pos1, HintManager.DEFAULT);
-        int hintFlags = HintManager.HIDE_BY_OTHER_HINT | HintManager.HIDE_BY_ESCAPE | HintManager.UPDATE_BY_SCROLLING;
-        HintManagerImpl.getInstanceImpl()
-                .showEditorHint(hint, editor, p, hintFlags, 50000, false);
-    }
-
 
     @Override
     public void terminated(TerminatedEventArguments args) {
@@ -646,15 +652,13 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
 
     // Capabilities
 
-
     /**
      * Returns true if the debug adapter supports the 'terminate' request and false otherwise.
      *
      * @return true if the debug adapter supports the 'terminate' request and false otherwise.
      */
     public boolean isSupportsTerminateRequest() {
-        var capabilities = getCapabilities();
-        return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsTerminateRequest());
+        return Boolean.TRUE.equals(getCapabilities().getSupportsTerminateRequest());
     }
 
     /**
@@ -663,8 +667,7 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
      * @return true if the debug adapter supports the 'completions' request and false otherwise.
      */
     public boolean isSupportsCompletionsRequest() {
-        var capabilities = getCapabilities();
-        return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsCompletionsRequest());
+        return Boolean.TRUE.equals(getCapabilities().getSupportsCompletionsRequest());
     }
 
     /**
@@ -673,13 +676,20 @@ public class DAPClient implements IDebugProtocolClient, Disposable {
      * @return true if the debug adapter supports setting a variable to a value and false otherwise.
      */
     public boolean isSupportsSetVariable() {
-        var capabilities = getCapabilities();
-        return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsSetVariable());
+        return Boolean.TRUE.equals(getCapabilities().getSupportsSetVariable());
+    }
+
+    /**
+     * Returns true if the debug adapter supports evaluate request for data hovers and false otherwise.
+     *
+     * @return true if the debug adapter supports evaluate request for data hovers and false otherwise.
+     */
+    public boolean isSupportsEvaluateForHovers() {
+        return Boolean.TRUE.equals(getCapabilities().getSupportsEvaluateForHovers());
     }
 
     public boolean canDisassemble() {
-        var capabilities = getCapabilities();
-        return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsDisassembleRequest());
+        return Boolean.TRUE.equals(getCapabilities().getSupportsDisassembleRequest());
     }
 
     @NotNull
