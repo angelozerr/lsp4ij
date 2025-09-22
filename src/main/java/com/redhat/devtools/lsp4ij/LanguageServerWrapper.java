@@ -113,11 +113,11 @@ public class LanguageServerWrapper implements Disposable {
     Map<String, Runnable> dynamicRegistrations = new HashMap<>();
     private final LSPFileListener fileListener = new LSPFileListener(this);
     private final AtomicInteger keepAliveCounter = new AtomicInteger();
-    protected StreamConnectionProvider lspStreamProvider;
+    //protected StreamConnectionProvider lspStreamProvider;
     private MessageBusConnection messageBusConnection;
     private Future<?> launcherFuture;
     private int numberOfRestartAttempts;
-    private @Nullable CompletableFuture<Void> initializeFuture;
+    //private @Nullable CompletableFuture<Void> initializeFuture;
     private LanguageServer languageServer;
     private LanguageClientImpl languageClient;
     private ServerCapabilities serverCapabilities;
@@ -277,6 +277,12 @@ public class LanguageServerWrapper implements Disposable {
         this.serverDefinition.setEnabled(enabled, initialProject);
     }
 
+    private CompletableFuture<RunningContext> runningContextFuture;
+
+    private class RunningContext {
+        public InitializeResult initializeResult;
+        StreamConnectionProvider lspStreamProvider;
+    }
     /**
      * Starts a language server and triggers initialization. If language server is
      * started and active, does nothing. If language server is inactive, restart it.
@@ -308,22 +314,26 @@ public class LanguageServerWrapper implements Disposable {
             }
         }
 
-        if (this.initializeFuture == null) {
+        if (this.runningContextFuture == null) {
             final VirtualFile rootURI = getRootURI();
             this.launcherFuture = new CompletableFuture<>();
-            this.initializeFuture = CompletableFuture.supplyAsync(() -> {
+            this.runningContextFuture = CompletableFuture.supplyAsync(() -> {
 
                         // Initialize LSP traces
                         if (tracing != null) {
                             tracing = null;
                         }
 
-                        var oldProvider = this.lspStreamProvider;
+
+                        RunningContext runningContext = new RunningContext();
+                        /*var oldProvider = this.lspStreamProvider;
                         if (oldProvider != null) {
                             // Ensure process is stopped before starting a new process
                             oldProvider.stop();
-                        }
-                        var provider = this.lspStreamProvider = serverDefinition.createConnectionProvider(initialProject);
+                        }*/
+
+                        var provider = serverDefinition.createConnectionProvider(initialProject);
+                        runningContext.lspStreamProvider = provider;
                         initParams.setInitializationOptions(provider.getInitializationOptions(rootURI));
 
                         // Add error log
@@ -357,8 +367,9 @@ public class LanguageServerWrapper implements Disposable {
                         // Throws the CannotStartProcessException exception if process is not alive.
                         // This use case comes for instance when the start process command fails (not a valid start command)
                         provider.ensureIsAlive();
-                        return null;
-                    }).thenRun(() -> {
+                        return runningContext;
+                    }).thenApply(runningContext -> {
+                        var lspStreamProvider = runningContext.lspStreamProvider;
                         languageClient = serverDefinition.createLanguageClient(initialProject);
                         languageClient.setServerWrapper(this);
                         initParams.setProcessId(getParentProcessId());
@@ -388,7 +399,7 @@ public class LanguageServerWrapper implements Disposable {
                                 getLanguageServerLifecycleManager().onError(this, e);
                                 throw e;
                             }
-                            final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+                            final StreamConnectionProvider currentConnectionProvider = lspStreamProvider;
                             if (currentConnectionProvider != null && isActive()) {
                                 currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
                             }
@@ -404,9 +415,10 @@ public class LanguageServerWrapper implements Disposable {
                         this.languageServer = launcher.getRemoteProxy();
                         languageClient.connect(languageServer);
                         this.launcherFuture = launcher.startListening();
+                        return runningContext;
                     })
-                    .thenCompose(unused -> initServer(rootURI))
-                    .thenAccept(res -> {
+                    .thenCompose(runningContext -> initServer(rootURI, runningContext))
+                    .thenApply(runningContext -> {
                         serverError = null;
                         if (errorNotification != null) {
                             // Close the current error notification
@@ -414,15 +426,20 @@ public class LanguageServerWrapper implements Disposable {
                             errorNotification.expire();
                             errorNotification = null;
                         }
-                        serverCapabilities = res.getCapabilities();
+                        serverCapabilities = runningContext.initializeResult.getCapabilities();
                         getClientFeatures().setServerCapabilities(serverCapabilities);
                         this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-                    }).thenRun(() -> this.languageServer.initialized(new InitializedParams())).thenRun(() -> {
-                        initializeFuture.thenRunAsync(() -> {
+                        return runningContext;
+                    }).thenApply(runningContext -> {
+                        this.languageServer.initialized(new InitializedParams());
+                        return runningContext;
+                    })
+                    .thenApply(runningContext -> {
+                        /*initializeFuture.thenRunAsync(() -> {
                             for (VirtualFile fileToReconnect : filesToReconnect) {
                                 connect(fileToReconnect, new LSPFileConnectionInfo(null, null, null, true));
                             }
-                        });
+                        });*/
 
                         messageBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
                         messageBusConnection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, fileListener);
@@ -432,6 +449,12 @@ public class LanguageServerWrapper implements Disposable {
                         fileOperationsManager.setServerCapabilities(serverCapabilities);
 
                         updateStatus(ServerStatus.started);
+
+                        for (VirtualFile fileToReconnect : filesToReconnect) {
+                            connect(fileToReconnect, new LSPFileConnectionInfo(null, null, null, true));
+                        }
+
+                        return runningContext;
                     }).exceptionally(e -> {
                         if (e instanceof CompletionException) {
                             e = e.getCause();
@@ -442,7 +465,7 @@ public class LanguageServerWrapper implements Disposable {
                             serverError = new CannotStartServerException("Error while starting language server '" + serverDefinition.getId() + "' (pid=" + getCurrentProcessId() + ")", e);
                         }
                         showNotificationStartServerError();
-                        initializeFuture.completeExceptionally(serverError);
+                        //initializeFuture.completeExceptionally(serverError);
                         getLanguageServerLifecycleManager().onError(this, e);
                         stop(false);
                         return null;
@@ -472,11 +495,13 @@ public class LanguageServerWrapper implements Disposable {
         }
     }
 
-    private CompletableFuture<InitializeResult> initServer(final VirtualFile rootURI) {
+    private CompletableFuture<RunningContext> initServer(final VirtualFile rootURI,
+                                                           @NotNull RunningContext runningContext) {
+        var lspStreamProvider = runningContext.lspStreamProvider;
         initParams.setCapabilities(ClientCapabilitiesFactory
                 .create(lspStreamProvider.getExperimentalFeaturesPOJO()));
         initParams.setClientInfo(getClientInfo());
-        initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
+        initParams.setTrace(lspStreamProvider.getTrace(rootURI));
 
         var folders = LSPIJUtils.toWorkspaceFolders(initialProject, getClientFeatures());
         initParams.setWorkspaceFolders(folders);
@@ -485,7 +510,12 @@ public class LanguageServerWrapper implements Disposable {
         getClientFeatures().initializeParams(initParams);
 
         // no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
-        return languageServer.initialize(initParams);
+        return languageServer
+                .initialize(initParams)
+                .thenApply(initializeResult -> {
+                    runningContext.initializeResult = initializeResult;
+                   return runningContext;
+                });
     }
 
     @Nullable
@@ -598,9 +628,9 @@ public class LanguageServerWrapper implements Disposable {
                 this.languageClient.dispose();
             }
 
-            if (this.initializeFuture != null) {
-                CancellationSupport.cancel(this.initializeFuture);
-                this.initializeFuture = null;
+            if (this.runningContextFuture != null) {
+                CancellationSupport.cancel(this.runningContextFuture);
+                this.runningContextFuture = null;
             }
 
             this.serverCapabilities = null;
