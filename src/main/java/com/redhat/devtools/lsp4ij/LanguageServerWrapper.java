@@ -61,6 +61,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
@@ -277,6 +281,74 @@ public class LanguageServerWrapper implements Disposable {
         this.serverDefinition.setEnabled(enabled, initialProject);
     }
 
+    public class SlowInputStream extends FilterInputStream {
+        public SlowInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            try {
+                Thread.sleep(500); // attendre 50ms avant chaque lecture
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return super.read(b, off, len);
+        }
+
+        @Override
+        public int read() throws IOException {
+            try {
+                Thread.sleep(500); // attendre 50ms avant chaque lecture
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return super.read();
+        }
+    }
+
+
+    public class DebugInputStream extends FilterInputStream {
+
+        public DebugInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (b != -1) {
+                printChar(b);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int count = super.read(b, off, len);
+            if (count > 0) {
+                for (int i = off; i < off + count; i++) {
+                    printChar(b[i]);
+                }
+            }
+            return count;
+        }
+
+        private void printChar(int b) {
+            char c = (char) b;
+            switch (c) {
+                case '\r':
+                    System.out.print("<CR>");
+                    break;
+                case '\n':
+                    System.out.print("<LF>\n");
+                    break;
+                default:
+                    System.out.print(c);
+            }
+        }
+    }
+
     /**
      * Starts a language server and triggers initialization. If language server is
      * started and active, does nothing. If language server is inactive, restart it.
@@ -393,10 +465,14 @@ public class LanguageServerWrapper implements Disposable {
                                 currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
                             }
                         });
+
+
+
+
                         Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder(getClientFeatures()) //
                                 .setLocalService(languageClient)//
                                 .setRemoteInterface(serverDefinition.getServerInterface())//
-                                .setInput(lspStreamProvider.getInputStream())//
+                                .setInput(new DebugInputStream(lspStreamProvider.getInputStream())) // lit 200 bytes max avec 5ms de pause
                                 .setOutput(lspStreamProvider.getOutputStream())//
                                 .setExecutorService(listener)//
                                 .wrapMessages(wrapper)//

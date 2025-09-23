@@ -31,14 +31,14 @@ import com.redhat.devtools.lsp4ij.features.semanticTokens.DefaultSemanticTokensC
 import com.redhat.devtools.lsp4ij.features.semanticTokens.SemanticTokensColorsProvider;
 import com.redhat.devtools.lsp4ij.installation.ServerInstaller;
 import com.redhat.devtools.lsp4ij.internal.capabilities.CodeLensOptionsAdapter;
+import com.redhat.devtools.lsp4ij.server.LanguageServerException;
 import com.redhat.devtools.lsp4ij.settings.contributors.LanguageServerSettingsContributor;
 import org.eclipse.lsp4j.CodeLensOptions;
-import org.eclipse.lsp4j.jsonrpc.Endpoint;
-import org.eclipse.lsp4j.jsonrpc.Launcher;
-import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
-import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint;
+import org.eclipse.lsp4j.jsonrpc.*;
+import org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor;
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler;
 import org.eclipse.lsp4j.jsonrpc.json.StreamMessageConsumer;
+import org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer;
 import org.eclipse.lsp4j.jsonrpc.messages.RequestMessage;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.services.ServiceEndpoints;
@@ -53,8 +53,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 /**
  * Base class for Language server definition.
@@ -265,11 +268,58 @@ public abstract class LanguageServerDefinition implements LanguageServerFactory,
                 jsonHandler.setMethodProvider(remoteEndpoint);
                 return remoteEndpoint;
             }
+
+            @Override
+            protected ConcurrentMessageProcessor createMessageProcessor(MessageProducer reader, MessageConsumer messageConsumer, S remoteProxy) {
+                return new ConcurrentMessageProcessor(reader, messageConsumer) {
+                    public void run() {
+                        processingStarted();
+                        try {
+                            reader.listen(messageConsumer);
+                        } catch (Exception e) {
+                            //LOG.log(Level.SEVERE, e.getMessage(), e);
+                        } finally {
+                            processingEnded();
+                        }
+                    }
+                };
+            }
+
+            @Override
+            public Launcher<S> create() {
+                // Validate input
+                if (input == null)
+                    throw new IllegalStateException("Input stream must be configured.");
+                if (output == null)
+                    throw new IllegalStateException("Output stream must be configured.");
+                if (localServices == null)
+                    throw new IllegalStateException("Local service must be configured.");
+                if (remoteInterfaces == null)
+                    throw new IllegalStateException("Remote interface must be configured.");
+
+                // Create the JSON handler, remote endpoint and remote proxy
+                MessageJsonHandler jsonHandler = createJsonHandler();
+                RemoteEndpoint remoteEndpoint = createRemoteEndpoint(jsonHandler);
+                S remoteProxy = createProxy(remoteEndpoint);
+
+                // Create the message processor
+                StreamMessageProducer reader = new StreamMessageProducer(input, jsonHandler, remoteEndpoint) {
+                    @Override
+                    protected void fireError(Throwable error) {
+                        throw new LanguageServerException(error);
+                    }
+                };
+                MessageConsumer messageConsumer = wrapMessageConsumer(remoteEndpoint);
+                ConcurrentMessageProcessor msgProcessor = createMessageProcessor(reader, messageConsumer, remoteProxy);
+                ExecutorService execService = executorService != null ? executorService : Executors.newCachedThreadPool();
+                return createLauncher(execService, remoteProxy, remoteEndpoint, msgProcessor);
+            }
         }.configureGson(builder -> {
             // Add a custom CodeLensOptionsAdapter to support old language server
             // which declares codeLenProvider with a boolean instead of Json object.
             builder.registerTypeAdapter(CodeLensOptions.class, new CodeLensOptionsAdapter());
         });
+
     }
 
     public boolean supportsCurrentEditMode(@NotNull Project project) {

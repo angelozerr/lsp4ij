@@ -34,7 +34,7 @@ class LSPProcessListener implements ProcessListener {
     public LSPProcessListener(@NotNull OSProcessStreamConnectionProvider provider) throws IOException {
         this.outputStream = new PipedOutputStream();
         this.outputStreamWriter = new OutputStreamWriter(this.outputStream, StandardCharsets.UTF_8);
-        this.inputStream = new PipedInputStream(this.outputStream);
+        this.inputStream = new PipedInputStream(this.outputStream, 5);
         this.provider = provider;
     }
 
