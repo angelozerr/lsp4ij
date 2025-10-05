@@ -108,7 +108,8 @@ public abstract class DAPBreakpointHandlerBase<B extends XBreakpoint<?>> extends
 
     @Override
     protected @NotNull CompletableFuture<@Nullable Void> doSendBreakpoints(@Nullable IDebugProtocolServer debugProtocolServer,
-                                                                           @Nullable TemporaryBreakpoint temporaryBreakpoint) {
+                                                                           @Nullable TemporaryBreakpoint temporaryBreakpoint,
+                                                                           @Nullable B removedBreakpoint) {
         // Convert list of IJ XBreakpoint -> LSP SourceBreakpoint
         Map<Source, List<SourceBreakpoint>> targetBreakpoints = new HashMap<>();
         for (B breakpoint : breakpoints) {
@@ -116,6 +117,15 @@ public abstract class DAPBreakpointHandlerBase<B extends XBreakpoint<?>> extends
             if (sourcePosition != null) {
                 addSourceBreakpoint(sourcePosition, breakpoint.getConditionExpression(), targetBreakpoints);
             }
+        }
+        if (removedBreakpoint != null) {
+            // Removed IntelliJ breakpoint
+            // Create a Source with empty source breakpoints if it doesn't exist,
+            // in order to disable removed breakpoint
+            // if the source contained only this breakpoint.
+            Source source = toDAPSource(temporaryBreakpoint.sourcePosition());
+            targetBreakpoints
+                    .computeIfAbsent(source, s -> new ArrayList<>());
         }
 
         if (temporaryBreakpoint != null) {

@@ -59,7 +59,7 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
     public CompletableFuture<@Nullable Void> initialize(@NotNull IDebugProtocolServer debugProtocolServer,
                                                         @NotNull Capabilities capabilities) {
         this.debugProtocolServers.add(debugProtocolServer);
-        return sendBreakpoints(debugProtocolServer, null);
+        return sendBreakpoints(debugProtocolServer, null, null);
     }
 
     @Override
@@ -70,7 +70,7 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
         }
 
         breakpoints.add(breakpoint);
-        sendBreakpoints(null, null);
+        sendBreakpoints(null, null, null);
     }
 
     @Override
@@ -81,8 +81,7 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
             return;
         }
         breakpoints.remove(breakpoint);
-        sendBreakpoints(null,
-                new TemporaryBreakpoint(sourcePosition, false));
+        sendBreakpoints(null, new TemporaryBreakpoint(sourcePosition, false), breakpoints.isEmpty() ? breakpoint : null);
     }
 
     @Override
@@ -91,11 +90,12 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
     }
 
     protected CompletableFuture<@Nullable Void> sendBreakpoints(@Nullable IDebugProtocolServer debugProtocolServer,
-                                                                @Nullable TemporaryBreakpoint temporaryBreakpoint) {
-        if (debugProtocolServers.isEmpty() || breakpoints.isEmpty()) {
+                                                                @Nullable TemporaryBreakpoint temporaryBreakpoint,
+                                                                @Nullable B removedBreakpoint) {
+        if (debugProtocolServers.isEmpty() || (breakpoints.isEmpty() && removedBreakpoint == null)) {
             return CompletableFuture.completedFuture(null);
         }
-        return doSendBreakpoints(debugProtocolServer, temporaryBreakpoint);
+        return doSendBreakpoints(debugProtocolServer, temporaryBreakpoint, removedBreakpoint);
     }
 
     /**
@@ -148,7 +148,7 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
      * @return the completable future.
      */
     public CompletableFuture<@Nullable Void> registerTemporaryBreakpoint(@NotNull XSourcePosition sourcePosition) {
-        return sendBreakpoints(null, new TemporaryBreakpoint(sourcePosition, true));
+        return sendBreakpoints(null, new TemporaryBreakpoint(sourcePosition, true), null);
     }
 
     /**
@@ -158,13 +158,14 @@ public abstract class BreakpointHandlerBase<B extends XBreakpoint<?>> extends XB
      * @return the completable future.
      */
     public CompletableFuture<@Nullable Void> unregisterTemporaryBreakpoint(@NotNull XSourcePosition sourcePosition) {
-        return sendBreakpoints(null, new TemporaryBreakpoint(sourcePosition, false));
+        return sendBreakpoints(null, new TemporaryBreakpoint(sourcePosition, false), null);
     }
 
     protected abstract boolean supportsBreakpoint(B breakpoint);
 
     protected abstract @NotNull CompletableFuture<@Nullable Void> doSendBreakpoints(@Nullable IDebugProtocolServer debugProtocolServer,
-                                                                           @Nullable TemporaryBreakpoint temporaryBreakpoint);
+                                                                                    @Nullable TemporaryBreakpoint temporaryBreakpoint,
+                                                                                    @Nullable B removedBreakpoint);
 
     protected record TemporaryBreakpoint(@NotNull XSourcePosition sourcePosition, boolean add) {
     }

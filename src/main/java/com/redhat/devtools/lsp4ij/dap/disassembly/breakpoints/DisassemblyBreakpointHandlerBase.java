@@ -86,16 +86,23 @@ public class DisassemblyBreakpointHandlerBase<B extends XBreakpoint<?>> extends 
         return breakpoint.getType() instanceof DisassemblyBreakpointTypeBase<?>;
     }
 
+    @Override
+    protected void sendEmptyBreakpointFor(@NotNull B breakpoint) {
+        var instructionBreakpoints = new ArrayList<InstructionBreakpoint>();
+        var file = breakpoint.getSourcePosition().getFile();
+    }
+
     /**
      * Sends all current breakpoints to the DAP server.
      *
-     * @param debugProtocolServer  the debug protocol server to send breakpoints to (nullable)
-     * @param temporaryBreakpoint  a temporary breakpoint used for testing (nullable)
+     * @param debugProtocolServer the debug protocol server to send breakpoints to (nullable)
+     * @param temporaryBreakpoint a temporary breakpoint used for testing (nullable)
+     * @param removedBreakpoint
      * @return a CompletableFuture that completes when all breakpoints are set
      */
     @Override
     protected @NotNull CompletableFuture<@Nullable Void> doSendBreakpoints(@Nullable IDebugProtocolServer debugProtocolServer,
-                                                                           @Nullable TemporaryBreakpoint temporaryBreakpoint) {
+                                                                           @Nullable TemporaryBreakpoint temporaryBreakpoint, @Nullable B removedBreakpoint) {
         var disassemblyFile = ((DAPDebugProcess) debugSession.getDebugProcess()).getDisassemblyFile();
         if (disassemblyFile == null) {
             // Should never occur
