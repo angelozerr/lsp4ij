@@ -278,6 +278,7 @@
     <depends optional="true" config-file="plugin-telemetry.xml">com.redhat.devtools.intellij.telemetry</depends>
     <depends optional="true" config-file="plugin-json.xml">com.intellij.modules.json</depends>
     <depends optional="true" config-file="plugin-terminal.xml">org.jetbrains.plugins.terminal</depends>
+
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
     <idea-version since-build="233.*"/>
 
@@ -1036,7 +1037,20 @@
         <!-- Disassembly support-->
         <fileType
                 name="Disassembly"
+                language="Disassembly"
                 implementationClass="com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyFileType"/>
+        <lang.fileViewProviderFactory
+                language="Disassembly"
+                implementationClass="com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyFileViewProviderFactory"/>
+        <lang.parserDefinition
+                language="Disassembly"
+                implementationClass="com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyParserDefinition"/>
+        <lang.syntaxHighlighterFactory
+                language="Disassembly"
+                implementationClass="com.redhat.devtools.lsp4ij.dap.disassembly.highlighter.DisassemblySyntaxHighlighterFactory"/>
+        <spellchecker.support
+                language="Disassembly"
+                implementationClass="com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblySpellCheckingStrategy"/>
         <fileEditorProvider
                 id="lsp.disassembly"
                 implementation="com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyFileEditorProvider"/>

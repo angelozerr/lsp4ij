@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.dap.client.files;
 
+import com.intellij.openapi.fileTypes.PlainTextFileType;
+import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,9 +36,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SourceReferenceFile extends DAPFile {
 
-    public SourceReferenceFile(String name,
+    public SourceReferenceFile(@NotNull String name,
                                @NotNull String path,
                                @NotNull Project project) {
-        super(name, path, project);
+        super(name, path, PlainTextFileType.INSTANCE, PlainTextLanguage.INSTANCE, project);
     }
 }

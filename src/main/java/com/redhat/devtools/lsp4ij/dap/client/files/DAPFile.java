@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.dap.client.files;
 
+import com.intellij.lang.Language;
+import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -17,6 +19,7 @@ import com.intellij.openapi.vfs.VirtualFileSystem;
 import com.intellij.testFramework.LightVirtualFile;
 import com.intellij.util.LocalTimeCounter;
 import com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyFileType;
+import com.redhat.devtools.lsp4ij.dap.disassembly.DisassemblyLanguage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -52,15 +55,18 @@ public abstract class DAPFile extends LightVirtualFile {
     private final @NotNull String url;
 
     /**
-     * IntelliJ project associated with this disassembly file.
+     * IntelliJ project associated with this disassembly file or source reference file.
      */
     private final @NotNull Project project;
     private long sessionId;
 
     public DAPFile(@NlsSafe String name,
                    @NotNull String path,
+                   @NotNull FileType fileType,
+                   @NotNull Language language,
                    @NotNull Project project) {
-        super(name, DisassemblyFileType.INSTANCE, "", LocalTimeCounter.currentTime());
+        super(name, fileType, "", LocalTimeCounter.currentTime());
+        super.setLanguage(language);
         this.project = project;
         this.path = path;
         this.url = DAPFileSystem.PROTOCOL + ":///" + getPath();

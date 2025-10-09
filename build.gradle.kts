@@ -72,6 +72,11 @@ dependencies {
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(properties("platformPlugins").map { it.split(',') })
 
+        if (ideaVersionInt >= 252) {
+            // Since 2025.2, JetBrains moved spellchecker in a new "intellij.spellchecker" module
+            bundledModule("intellij.spellchecker")
+        }
+
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)
@@ -102,7 +107,7 @@ dependencies {
 // Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
         vendor = JvmVendorSpec.JETBRAINS
     }
 }
