@@ -33,7 +33,9 @@ public class LSPCommand extends Command {
 
     LSPCommand(Command command, ClassLoader classLoader) {
         this.classLoader = classLoader;
-        super.setTitle(command.getTitle());
+        if (command.getTitle() != null) {
+            super.setTitle(command.getTitle());
+        }
         super.setCommand(command.getCommand());
         this.originalArguments = command.getArguments();
         if (originalArguments == null || originalArguments.isEmpty()) {
