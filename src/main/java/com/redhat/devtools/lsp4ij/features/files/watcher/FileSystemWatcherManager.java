@@ -35,6 +35,50 @@ public class FileSystemWatcherManager {
 
     private static final int WatchKindAny = 7;
 
+    /**
+     * Archive file extensions that should be skipped to avoid ZipFileSystemProvider
+     * triggering toRealPath() which causes EDT freezes on Windows.
+     */
+    private static final Set<String> ARCHIVE_EXTENSIONS = Set.of(
+            // Java archives (most common in IDE context)
+            ".jar", ".war", ".ear", ".aar", ".sar", ".par",
+
+            // ZIP-based archives
+            ".zip", ".zipx",
+
+            // Android
+            ".apk", ".apks", ".xapk", ".aab",
+
+            // Compression formats
+            ".gz", ".gzip", ".bz2", ".bzip2", ".xz", ".lz", ".lzma",
+            ".z", ".Z",
+
+            // Tar archives
+            ".tar", ".tgz", ".tar.gz", ".tbz", ".tbz2", ".tar.bz2",
+            ".txz", ".tar.xz", ".tlz", ".tar.lz", ".tar.Z",
+
+            // RAR and 7-Zip
+            ".rar", ".7z", ".7zip",
+
+            // Windows archives
+            ".cab", ".msi", ".msix", ".appx",
+
+            // macOS/iOS
+            ".dmg", ".pkg", ".ipa",
+
+            // Linux packages
+            ".deb", ".rpm", ".snap", ".appimage",
+
+            // ISO images
+            ".iso", ".img",
+
+            // Other common archives
+            ".ace", ".arj", ".lha", ".lzh", ".sit", ".sitx",
+
+            // Office/Document archives (ZIP-based internally)
+            ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp", ".epub"
+    );
+
     private final Map<String, List<FileSystemWatcher>> registry;
     private final @Nullable Path basePath;
 
@@ -195,6 +239,28 @@ public class FileSystemWatcherManager {
         var matchers = pathPatternMatchers.get(kind);
         return matchers != null && !matchers.isEmpty();
     }
+
+    /**
+     * Checks if the URI points to an archive file.
+     * Archive files should be skipped to avoid triggering ZipFileSystemProvider
+     * which calls toRealPath() -> FindFirstFile0 on Windows, causing EDT freezes.
+     */
+    private static boolean isArchiveFile(@NotNull URI uri) {
+        String path = uri.getPath();
+        if (path == null) {
+            return false;
+        }
+
+        // Extract the extension (including the dot)
+        int lastDot = path.lastIndexOf('.');
+        if (lastDot == -1 || lastDot == path.length() - 1) {
+            return false; // No extension or ends with a dot
+        }
+
+        String extension = path.substring(lastDot).toLowerCase();
+        return ARCHIVE_EXTENSIONS.contains(extension);
+    }
+
     /**
      * Returns true if the given uri matches a pattern for the given watch kind and false otherwise.
      *
@@ -205,6 +271,12 @@ public class FileSystemWatcherManager {
     public boolean isMatchFilePattern(@Nullable URI uri, int kind) {
         // If no URI or no patterns are registered, there can be no match
         if (uri == null || !hasFilePatterns()) {
+            return false;
+        }
+
+        // FIX: Skip archive files to avoid ZipFileSystemProvider triggering toRealPath()
+        // which causes WindowsNativeDispatcher.FindFirstFile0 freeze on slow disks
+        if (isArchiveFile(uri)) {
             return false;
         }
 
@@ -256,7 +328,7 @@ public class FileSystemWatcherManager {
      * for the specified watch kind.
      *
      * <p>This method iterates through all pattern matchers for the given {@code kind},
-     * checks if the provided path is under each matcher’s base path, and if so, applies the matcher
+     * checks if the provided path is under each matcher's base path, and if so, applies the matcher
      * to the relative path.</p>
      *
      * <p>To optimize performance, a cache map is used to store intermediate results for base path checks:
@@ -289,11 +361,17 @@ public class FileSystemWatcherManager {
 
         // Iterate over each matcher
         for (var matcher : matchers) {
-            // Check if the path is under the matcher’s base path
+            // Check if the path is under the matcher's base path
             var relativePath = matchBasePath(path, matcher.getBasePath(), basePathToRelativePath);
             if (relativePath != null) {
                 // Apply the matcher to the relative path
                 if (matcher.matches(matcher.getBasePath().relativize(path))) {
+                    return true;
+                }
+            } else if (matcher.getBasePath() == null) {
+                // ex: "globPattern": "C:\\Users\\XXX\\IdeaProjects\\test-rust/**/*.rs"
+                // Apply the matcher to the path
+                if (matcher.matches(path)) {
                     return true;
                 }
             }
@@ -342,5 +420,4 @@ public class FileSystemWatcherManager {
         basePathToRelativePath.put(basePath, Either.forRight(Boolean.FALSE));
         return null;
     }
-
 }

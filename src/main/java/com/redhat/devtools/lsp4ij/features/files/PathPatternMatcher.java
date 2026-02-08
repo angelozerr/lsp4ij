@@ -37,6 +37,13 @@ public class PathPatternMatcher {
 
     public PathPatternMatcher(@NotNull String pattern,
                               @Nullable Path basePath) {
+        if (basePath != null) {
+            if (pattern.startsWith(basePath.toString())) {
+                // ex:  "globPattern": "C:\\Users\\XXX\\IdeaProjects\\test-rust/**/*.rs"
+                // basePath="C:\\Users\\XXX\\IdeaProjects\\test-rust/"
+                basePath = null;
+            }
+        }
         this.pattern = pattern;
         this.basePath = basePath;
     }
