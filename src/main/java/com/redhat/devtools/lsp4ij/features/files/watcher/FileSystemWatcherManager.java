@@ -139,7 +139,7 @@ public class FileSystemWatcherManager {
                     // Invalid pattern, ignore the watcher
                     return null;
                 }
-                return new PathPatternMatcher(pattern, basePath);
+                return PathPatternMatcher.fromPattern(pattern, basePath);
             } else {
                 RelativePattern relativePattern = globPattern.getRight();
                 if (relativePattern != null) {
@@ -375,10 +375,10 @@ public class FileSystemWatcherManager {
             var relativePath = matchBasePath(path, matcher.getBasePath(), basePathToRelativePath);
             if (relativePath != null) {
                 // Apply the matcher to the relative path
-                if (matcher.matches(matcher.getBasePath().relativize(path))) {
+                if (matcher.matches(relativePath)) {
                     return true;
                 }
-            } else if (matcher.getBasePath() == null) {
+            } else {
                 // ex: "globPattern": "C:\\Users\\XXX\\IdeaProjects\\test-rust/**/*.rs"
                 // Apply the matcher to the path
                 if (matcher.matches(path)) {
@@ -429,5 +429,90 @@ public class FileSystemWatcherManager {
         // Path is not under base path, cache negative result
         basePathToRelativePath.put(basePath, Either.forRight(Boolean.FALSE));
         return null;
+    }
+
+    /**
+     * Extracts the base path from a glob pattern string.
+     * The base path is the portion before any glob characters (*, ?, [, {).
+     *
+     * @param globPattern the glob pattern (e.g., "C:\\Users\\project/**\/*.rs")
+     * @return the base path before the glob pattern, or null if no valid base path exists
+     *
+     * Examples:
+     * - "C:\\Users\\project\\test-rust/**\/*.rs" -> Path("C:\\Users\\project\\test-rust")
+     * - "/home/user/project/**\/*.java" -> Path("/home/user/project")
+     * - "**\/*.txt" -> null (pattern starts with glob)
+     */
+    private static @Nullable Path extractBasePath(String globPattern) {
+        if (StringUtils.isBlank(globPattern)) {
+            return null;
+        }
+
+        // Find the first occurrence of glob characters: * ? [ {
+        int firstGlobChar = findFirstGlobCharacter(globPattern);
+
+        if (firstGlobChar == -1) {
+            // No glob characters, the entire string is a path
+            try {
+                return Paths.get(globPattern);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        if (firstGlobChar == 0) {
+            // Pattern starts with a glob character (e.g., "**/*.rs")
+            return null;
+        }
+
+        // Find the last path separator before the first glob character
+        String beforeGlob = globPattern.substring(0, firstGlobChar);
+        int lastSeparator = Math.max(
+                beforeGlob.lastIndexOf('/'),
+                beforeGlob.lastIndexOf('\\')
+        );
+
+        if (lastSeparator == -1) {
+            // No separator found before glob, no valid base path
+            return null;
+        }
+
+        String basePath = globPattern.substring(0, lastSeparator);
+
+        try {
+            return Paths.get(basePath);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Finds the index of the first glob metacharacter in the string.
+     * Glob characters: * ? [ {
+     */
+    private static int findFirstGlobCharacter(String pattern) {
+        int minIndex = Integer.MAX_VALUE;
+
+        int asterisk = pattern.indexOf('*');
+        if (asterisk != -1 && asterisk < minIndex) {
+            minIndex = asterisk;
+        }
+
+        int question = pattern.indexOf('?');
+        if (question != -1 && question < minIndex) {
+            minIndex = question;
+        }
+
+        int bracket = pattern.indexOf('[');
+        if (bracket != -1 && bracket < minIndex) {
+            minIndex = bracket;
+        }
+
+        int brace = pattern.indexOf('{');
+        if (brace != -1 && brace < minIndex) {
+            minIndex = brace;
+        }
+
+        return minIndex == Integer.MAX_VALUE ? -1 : minIndex;
     }
 }
