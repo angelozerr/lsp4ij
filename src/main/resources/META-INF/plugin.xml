@@ -462,13 +462,11 @@
                 order="first"/>
 
         <!-- LSP textDocument/documentLink request support -->
-        <externalAnnotator
-                id="LSPDocumentLinkAnnotator"
-                language=""
-                implementationClass="com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkAnnotator"/>
-        <gotoDeclarationHandler
-                id="LSPDocumentLinkGotoDeclarationHandler"
-                implementation="com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkGotoDeclarationHandler"/>
+        <highlightingPassFactory
+                implementation="com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkHighlightingPassFactory"/>
+        <psi.implicitReferenceProvider
+                id="LSPDocumentLinkReferenceProvider"
+                implementation="com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkReferenceProvider"/>
         <lang.documentationProvider
                 language=""
                 implementationClass="com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkDocumentationProvider"/>
