@@ -7,7 +7,7 @@ junit-jupiter = "5.10.3"
 testlogger = "3.2.0"
 kotlin = "2.2.0"
 changelog = "2.2.1"
-gradleIntelliJPlugin = "2.9.0"
+gradleIntelliJPlugin = "2.10.4"
 kover = "0.8.3"
 
 [libraries]

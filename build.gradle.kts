@@ -56,9 +56,8 @@ dependencies {
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        // Disabling the installer dependency since IntelliJ 253 (2025.3.x) and potentially other
-        // early access/snapshot versions may lack direct installer packages in the artifact repositories.
-        create(properties("platformType"), properties("platformVersion"), useInstaller = false)
+        // Since 2025.3, use intellijIdea() instead of create() for IC builds
+        intellijIdea(properties("platformVersion"))
 
         // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
         // starting from 2024.3, all json related code is know on its own plugin
@@ -259,7 +258,8 @@ tasks {
         // Improved hotswap for the IDE's JVM
         if (supportsEnhancedClassRedefinition()) {
             println("Enabling enhanced class redefinition.")
-            jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:HotswapAgent=fatjar")
+            // Temporarily disable HotswapAgent as it's not available in JBR 25.0.2
+            jvmArgs("-XX:+AllowEnhancedClassRedefinition") //, "-XX:HotswapAgent=fatjar")
         }
 
         //Use "debug" to send telemetry to dev source at segment.com
