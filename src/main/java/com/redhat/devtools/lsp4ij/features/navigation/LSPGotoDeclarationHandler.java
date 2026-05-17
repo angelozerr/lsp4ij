@@ -94,7 +94,7 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
                 return PsiElement.EMPTY_ARRAY;
             }
         }
-
+        semanticTokensFileViewProvider=null;
         // If this is a semantic token-backed file and there were targets but this wasn't represented in semantic tokens
         // as a reference, stub a reference for the word at the current offset
         if (semanticTokensFileViewProvider != null) {
@@ -120,23 +120,25 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
     }
 
     /**
-     * Uses LSP to resolve the target elements for the reference at the specified offset in the file containing the
-     * provided source element.
+     * Uses LSP to resolve the location data for the reference at the specified offset in the file containing the
+     * provided source element. This method returns the raw LocationData which includes originSelectionRange
+     * information from LocationLink.
      *
      * @param sourceElement the source element
      * @param offset        the offset
-     * @return the resolved reference
+     * @return the list of location data
      */
     @ApiStatus.Internal
-    public static PsiElement @NotNull [] getGotoDeclarationTargets(@NotNull PsiElement sourceElement, int offset) {
+    @NotNull
+    public static List<LocationData> getGotoDeclarationLocations(@NotNull PsiElement sourceElement, int offset) {
         VirtualFile file = LSPIJUtils.getFile(sourceElement);
         if (file == null) {
-            return PsiElement.EMPTY_ARRAY;
+            return List.of();
         }
 
         Document document = LSPIJUtils.getDocument(file);
         if (document == null) {
-            return PsiElement.EMPTY_ARRAY;
+            return List.of();
         }
 
         // Consume LSP 'textDocument/definition' request
@@ -160,15 +162,34 @@ public class LSPGotoDeclarationHandler implements GotoDeclarationHandler {
             // textDocument/definition has been collected correctly
             List<LocationData> locations = definitionsFuture.getNow(null);
             if (locations != null) {
-                Project project = psiFile.getProject();
-                return locations
-                        .stream()
-                        .map(location -> toPsiElement(location.location(), location.languageServer().getClientFeatures(), project))
-                        .filter(Objects::nonNull)
-                        .toArray(PsiElement[]::new);
+                return locations;
             }
         }
-        return PsiElement.EMPTY_ARRAY;
+        return List.of();
+    }
+
+    /**
+     * Uses LSP to resolve the target elements for the reference at the specified offset in the file containing the
+     * provided source element.
+     *
+     * @param sourceElement the source element
+     * @param offset        the offset
+     * @return the resolved reference
+     */
+    @ApiStatus.Internal
+    public static PsiElement @NotNull [] getGotoDeclarationTargets(@NotNull PsiElement sourceElement, int offset) {
+        List<LocationData> locations = getGotoDeclarationLocations(sourceElement, offset);
+        if (locations.isEmpty()) {
+            return PsiElement.EMPTY_ARRAY;
+        }
+
+        PsiFile psiFile = sourceElement.getContainingFile();
+        Project project = psiFile.getProject();
+        return locations
+                .stream()
+                .map(location -> toPsiElement(location.location(), location.languageServer().getClientFeatures(), project))
+                .filter(Objects::nonNull)
+                .toArray(PsiElement[]::new);
     }
 
     /**

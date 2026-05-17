@@ -426,6 +426,8 @@
         <applicationService
                 id="com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplateManager"
                 serviceImplementation="com.redhat.devtools.lsp4ij.launching.templates.LanguageServerTemplateManager"/>
+        <applicationService
+                serviceImplementation="com.redhat.devtools.lsp4ij.features.navigation.LSPImplicitReferenceProvider$CurrentActionHolder"/>
 
         <!-- LSP project services -->
         <projectService
@@ -472,6 +474,8 @@
                 id="LSPGotoDeclarationHandler"
                 implementation="com.redhat.devtools.lsp4ij.features.navigation.LSPGotoDeclarationHandler"
                 order="first"/>
+        <psi.implicitReferenceProvider
+                implementation="com.redhat.devtools.lsp4ij.features.navigation.LSPImplicitReferenceProvider"/>
 
         <!-- LSP textDocument/documentLink request support -->
         <externalAnnotator
@@ -673,6 +677,8 @@
         <listener
                 class="com.redhat.devtools.lsp4ij.features.semanticTokens.viewProvider.LSPSemanticTokensStructurelessFileViewProviderRegistrar$FileTypesChangedListener"
                 topic="com.intellij.openapi.fileTypes.FileTypeListener"/>
+        <listener topic="com.intellij.openapi.actionSystem.ex.AnActionListener"
+                  class="com.redhat.devtools.lsp4ij.features.navigation.LSPImplicitReferenceProvider$CurrentActionListener"/>
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">

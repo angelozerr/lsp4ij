@@ -1429,13 +1429,16 @@ public class LSPIJUtils {
         if (locations.isLeft()) {
             return locations.getLeft()
                     .stream()
-                    .map(l -> new LocationData(new Location(l.getUri(), l.getRange()), languageServer))
+                    .map(l -> new LocationData(new Location(l.getUri(), l.getRange()), languageServer, null))
                     .toList();
 
         }
         return locations.getRight()
                 .stream()
-                .map(l -> new LocationData(new Location(l.getTargetUri(), l.getTargetSelectionRange() != null ? l.getTargetSelectionRange() : l.getTargetRange()), languageServer))
+                .map(l -> new LocationData(
+                        new Location(l.getTargetUri(), l.getTargetSelectionRange() != null ? l.getTargetSelectionRange() : l.getTargetRange()),
+                        languageServer,
+                        l.getOriginSelectionRange()))
                 .toList();
     }
 
