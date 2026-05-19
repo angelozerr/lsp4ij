@@ -41,6 +41,7 @@ public class LSPRequestConstants {
     public static final String INLAY_HINT_RESOLVE = "inlayHint/resolve";
     public static final String TEXT_DOCUMENT_DOCUMENT_COLOR = "textDocument/documentColor";
     public static final String TEXT_DOCUMENT_COMPLETION = "textDocument/completion";
+    public static final String TEXT_DOCUMENT_INLINE_COMPLETION = "textDocument/inlineCompletion";
     public static final String TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT = "textDocument/documentHighlight";
     public static final String TEXT_DOCUMENT_FORMATTING = "textDocument/formatting";
     public static final String TEXT_DOCUMENT_RANGE_FORMATTING = "textDocument/rangeFormatting";
