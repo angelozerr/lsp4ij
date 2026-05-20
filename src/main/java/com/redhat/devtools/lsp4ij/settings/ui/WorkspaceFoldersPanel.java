@@ -13,26 +13,25 @@
  *******************************************************************************/
 package com.redhat.devtools.lsp4ij.settings.ui;
 
-import com.google.gson.JsonObject;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.*;
+import com.intellij.ui.ColoredTreeCellRenderer;
+import com.intellij.ui.HyperlinkLabel;
+import com.intellij.ui.OnePixelSplitter;
+import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.components.panels.HorizontalLayout;
 import com.intellij.ui.treeStructure.Tree;
-import com.intellij.util.ui.StatusText;
 import com.intellij.util.Alarm;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.StatusText;
 import com.intellij.util.ui.UIUtil;
 import com.redhat.devtools.lsp4ij.LanguageServerBundle;
 import com.redhat.devtools.lsp4ij.client.features.FileUriSupport;
@@ -51,7 +50,10 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
-import java.awt.dnd.*;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -161,12 +163,22 @@ public class WorkspaceFoldersPanel extends JPanel implements Disposable {
     private JPanel createRightPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Header with label
+        // Header with label and description
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBorder(JBUI.Borders.empty(5));
 
+        JPanel labelPanel = new JPanel(new BorderLayout());
         JLabel label = new JLabel(LanguageServerBundle.message("language.server.workspaceFolders.detected"));
-        headerPanel.add(label, BorderLayout.WEST);
+        labelPanel.add(label, BorderLayout.NORTH);
+
+        // Add description to explain this is a preview/test panel
+        JBLabel descriptionLabel = new JBLabel(LanguageServerBundle.message("language.server.workspaceFolders.detected.description"));
+        descriptionLabel.setForeground(UIUtil.getLabelDisabledForeground());
+        descriptionLabel.setBorder(JBUI.Borders.emptyTop(2));
+        descriptionLabel.setFont(JBUI.Fonts.smallFont());
+        labelPanel.add(descriptionLabel, BorderLayout.CENTER);
+
+        headerPanel.add(labelPanel, BorderLayout.WEST);
 
         // Test zone (above tree)
         JPanel testPanel = createTestPanel();
@@ -200,6 +212,7 @@ public class WorkspaceFoldersPanel extends JPanel implements Disposable {
 
         JBLabel testLabel = new JBLabel(LanguageServerBundle.message("language.server.workspaceFolders.test"));
         testLabel.setForeground(UIUtil.getLabelDisabledForeground());
+        testLabel.setToolTipText(LanguageServerBundle.message("language.server.workspaceFolders.test.description"));
         dropZone.add(testLabel);
 
         HyperlinkLabel browseLink = new HyperlinkLabel(LanguageServerBundle.message("language.server.workspaceFolders.browse"));
@@ -211,6 +224,7 @@ public class WorkspaceFoldersPanel extends JPanel implements Disposable {
             dropZone.add(new JLabel(" - "));
             sendAtInitCheckbox = new JBCheckBox(LanguageServerBundle.message("language.server.workspaceFolders.sendAtInit"), false);
             sendAtInitCheckbox.setOpaque(false);
+            sendAtInitCheckbox.setToolTipText(LanguageServerBundle.message("language.server.workspaceFolders.sendAtInit.tooltip"));
             sendAtInitCheckbox.addActionListener(e -> {
                 com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
                     updateWorkspaceFoldersDisplay();
