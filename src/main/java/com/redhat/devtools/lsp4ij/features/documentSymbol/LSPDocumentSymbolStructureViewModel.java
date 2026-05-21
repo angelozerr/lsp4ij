@@ -111,9 +111,9 @@ public class LSPDocumentSymbolStructureViewModel extends StructureViewModelBase 
                 documentSymbolSupport.cancel();
                 return Collections.emptyList();
             } catch (CancellationException e) {
-                //documentSymbolSupport.cancel();
-                throw e;
-            } catch (ExecutionException e) {
+                // Don't rethrow - can occur during rapid start/stop cycles when futures are cancelled
+                return Collections.emptyList();
+            } catch (Exception e) {
                 return Collections.emptyList();
             }
 

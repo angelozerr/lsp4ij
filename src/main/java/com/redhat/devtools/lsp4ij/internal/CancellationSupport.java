@@ -113,7 +113,7 @@ public class CancellationSupport implements CancelChecker {
                                             boolean handleLanguageServerError) {
         if (cancelled) {
             CancellationSupport.cancel(future);
-            throw new ProcessCanceledException();
+            // throw new ProcessCanceledException();
         } else {
             // Add the future to the list of the futures to cancel (when CancellationSupport.cancel() is called)
             this.futuresToCancel.add(future);
@@ -123,6 +123,10 @@ public class CancellationSupport implements CancelChecker {
                 // In this error case, the future will return null as response instead of throwing the ResponseErrorException error
                 // to avoid breaking the LSP request response of another language server (when file is associated to several language servers)
                 future = future.handle(handleLSPFeatureResult(languageServer, featureName, handleLanguageServerError));
+            } else {
+                // Even without languageServer, we need to handle cancellation exceptions
+                // to prevent them from propagating during rapid start/stop cycles
+                future = future.handle(handleCancellationAndErrors());
             }
         }
         return future;
@@ -171,6 +175,30 @@ public class CancellationSupport implements CancelChecker {
                 }
                 // Check if the error is a CompletionException wrapping a MessageIssueException
                 if (error instanceof CompletionException && error.getCause() instanceof MessageIssueException) {
+                    return null;
+                }
+                if (error instanceof RuntimeException) {
+                    throw (RuntimeException) error;
+                }
+                // Rethrow the error
+                throw new CompletionException(error);
+            }
+            // Return the response
+            return result;
+        };
+    }
+
+    @NotNull
+    private static <T> BiFunction<T, Throwable, T> handleCancellationAndErrors() {
+        return (result, error) -> {
+            if (error != null) {
+                if (error instanceof CancellationException) {
+                    // Ignore cancellation - return null
+                    return null;
+                }
+                // Check if the error is a CompletionException wrapping a CancellationException
+                if (error instanceof CompletionException && error.getCause() instanceof CancellationException) {
+                    // Ignore wrapped cancellation - return null
                     return null;
                 }
                 if (error instanceof RuntimeException) {
@@ -289,7 +317,7 @@ public class CancellationSupport implements CancelChecker {
      * @param future the future to cancel.
      */
     public static void cancel(@Nullable Future<?> future) {
-        if (future != null && !future.isDone()) {
+        if (future != null /*&& !future.isDone()*/) {
             try {
                 future.cancel(true);
             } catch (Throwable e) {

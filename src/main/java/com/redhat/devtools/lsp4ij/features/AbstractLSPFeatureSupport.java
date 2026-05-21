@@ -87,6 +87,10 @@ public abstract class AbstractLSPFeatureSupport<Params, Result> {
         if (isValidLSPFuture()) {
             return future;
         }
+        return loadSync(params);
+    }
+
+    private synchronized CompletableFuture<Result> loadSync(Params params) {
         // Cancel previous LSP requests future
         cancel();
         // Load a new LSP requests future

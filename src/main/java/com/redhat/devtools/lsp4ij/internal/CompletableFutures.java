@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -73,16 +74,43 @@ public class CompletableFutures {
                                                                            @NotNull CancellationSupport cancellationSupport) {
         CompletableFuture<Void> allFutures = cancellationSupport
                 .execute(CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])));
-        return allFutures.thenApply(Void -> {
-            List<T> mergedDataList = new ArrayList<>(futures.size());
-            for (CompletableFuture<List<T>> dataListFuture : futures) {
-                var data = dataListFuture.join();
-                if (data != null) {
-                    mergedDataList.addAll(data);
-                }
-            }
-            return mergedDataList;
-        });
+
+        // Handle cancellation exceptions properly - same pattern as CancellationSupport.execute()
+        return allFutures
+                .handle((voidResult, error) -> {
+                    // If error occurred, handle it
+                    if (error != null) {
+                        if (error instanceof CancellationException) {
+                            // Ignore cancellation - return empty list
+                            return Collections.<T>emptyList();
+                        }
+                        // Check if the error is a CompletionException wrapping a CancellationException
+                        if (error instanceof CompletionException && error.getCause() instanceof CancellationException) {
+                            // Ignore wrapped cancellation - return empty list
+                            return Collections.<T>emptyList();
+                        }
+                        // Other errors - rethrow
+                        if (error instanceof RuntimeException) {
+                            throw (RuntimeException) error;
+                        }
+                        throw new CompletionException(error);
+                    }
+
+                    // Success - merge all futures
+                    List<T> mergedDataList = new ArrayList<>(futures.size());
+                    for (CompletableFuture<List<T>> dataListFuture : futures) {
+                        // After allOf() completes, all futures are done (success, exception, or cancelled)
+                        // getNow() is safe here and won't block - it returns the value or defaultValue
+                        if (!dataListFuture.isCompletedExceptionally()) {
+                            var data = dataListFuture.getNow(null);
+                            if (data != null) {
+                                mergedDataList.addAll(data);
+                            }
+                        }
+                        // If completed exceptionally (cancelled or error), we skip it silently
+                    }
+                    return mergedDataList;
+                });
     }
 
     /**

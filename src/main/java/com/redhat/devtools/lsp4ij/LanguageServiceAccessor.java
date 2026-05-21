@@ -388,7 +388,23 @@ public class LanguageServiceAccessor implements Disposable {
         // Returns the language servers which match the given file, start them and connect the file to each matched language server
         final List<LanguageServerItem> servers = Collections.synchronizedList(new ArrayList<>());
         try {
-            return matchedServers
+            // Handle cancellation on matchedServers future itself
+            CompletableFuture<Collection<LanguageServerWrapper>> safeMatchedServers = matchedServers
+                    .handle((result, error) -> {
+                        if (error != null) {
+                            if (error instanceof CancellationException ||
+                                (error instanceof CompletionException && error.getCause() instanceof CancellationException)) {
+                                return Collections.<LanguageServerWrapper>emptyList();
+                            }
+                            if (error instanceof RuntimeException) {
+                                throw (RuntimeException) error;
+                            }
+                            throw new CompletionException(error);
+                        }
+                        return result;
+                    });
+
+            return safeMatchedServers
                     .thenComposeAsync(result -> CompletableFuture.allOf(result
                             .stream()
                             .filter(LanguageServerWrapper::isEnabled)
@@ -416,7 +432,26 @@ public class LanguageServiceAccessor implements Disposable {
                                                 .exceptionally(LanguageServiceAccessor::handleFutureException);
                                     }
                             ).toArray(CompletableFuture[]::new)))
-                    .thenApply(theVoid -> servers);
+                    .thenApply(theVoid -> servers)
+                    .handle((result, error) -> {
+                        // Handle cancellation of the entire chain during rapid start/stop cycles
+                        if (error != null) {
+                            if (error instanceof CancellationException) {
+                                // Ignore cancellation - return empty list
+                                return Collections.emptyList();
+                            }
+                            if (error instanceof CompletionException && error.getCause() instanceof CancellationException) {
+                                // Ignore wrapped cancellation - return empty list
+                                return Collections.emptyList();
+                            }
+                            // Other errors - rethrow
+                            if (error instanceof RuntimeException) {
+                                throw (RuntimeException) error;
+                            }
+                            throw new CompletionException(error);
+                        }
+                        return result;
+                    });
         } catch (final ProcessCanceledException cancellation) {
             throw cancellation;
         } catch (final Exception e) {
@@ -470,6 +505,25 @@ public class LanguageServiceAccessor implements Disposable {
                     .thenApply(asyncServerDefinitions -> {
                         collectLanguageServersFromDefinition(file, asyncServerDefinitions, matchedServers, beforeStartingServerFilter);
                         return matchedServers;
+                    })
+                    .handle((result, error) -> {
+                        // Handle cancellation during rapid start/stop cycles
+                        if (error != null) {
+                            if (error instanceof CancellationException) {
+                                // Ignore cancellation - return sync matched servers only
+                                return matchedServers;
+                            }
+                            if (error instanceof CompletionException && error.getCause() instanceof CancellationException) {
+                                // Ignore wrapped cancellation - return sync matched servers only
+                                return matchedServers;
+                            }
+                            // Other errors - rethrow
+                            if (error instanceof RuntimeException) {
+                                throw (RuntimeException) error;
+                            }
+                            throw new CompletionException(error);
+                        }
+                        return result;
                     });
         }
         return CompletableFuture.completedFuture(matchedServers);

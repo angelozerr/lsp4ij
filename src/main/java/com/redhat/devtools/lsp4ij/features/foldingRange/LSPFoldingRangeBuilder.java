@@ -122,8 +122,7 @@ public class LSPFoldingRangeBuilder extends CustomFoldingBuilder {
         } catch (
                 ProcessCanceledException e) {//Since 2024.2 ProcessCanceledException extends CancellationException so we can't use multicatch to keep backward compatibility
             //TODO delete block when minimum required version is 2024.2
-            foldingRangeSupport.cancel();
-            return Collections.emptyList();
+            throw e;
         } catch (CancellationException e) {
             // cancel the LSP requests textDocument/foldingRanges
             foldingRangeSupport.cancel();

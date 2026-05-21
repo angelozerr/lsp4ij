@@ -60,7 +60,7 @@ public class LSPDocumentSymbolSupport extends AbstractLSPDocumentFeatureSupport<
                 .thenComposeAsync(languageServers -> {
                     // Here languageServers is the list of language servers which matches the given file
                     // and which have document link capability
-                    if (languageServers.isEmpty()) {
+                    if (true) { //languageServers.isEmpty()) {
                         return CompletableFuture.completedFuture(Collections.emptyList());
                     }
 
