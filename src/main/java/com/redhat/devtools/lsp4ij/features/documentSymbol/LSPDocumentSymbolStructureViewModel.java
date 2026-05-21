@@ -109,7 +109,7 @@ public class LSPDocumentSymbolStructureViewModel extends StructureViewModelBase 
             } catch (
                     PsiFileChangedException e) { //Since 2024.2 ProcessCanceledException extends CancellationException so we can't use multicatch to keep backward compatibility
                 documentSymbolSupport.cancel();
-                throw e;
+                return Collections.emptyList();
             } catch (CancellationException e) {
                 //documentSymbolSupport.cancel();
                 throw e;
