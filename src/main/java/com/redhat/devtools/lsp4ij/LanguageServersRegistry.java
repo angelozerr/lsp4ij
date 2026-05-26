@@ -87,18 +87,47 @@ public class LanguageServersRegistry implements Disposable {
     // them; otherwise the platform retains a hard ref to the contributing plugin's Language.
     private final Map<Language, LSPFindUsagesProvider> registeredFindUsagesProviders = new ConcurrentHashMap<>();
 
+    private volatile boolean initialized = false;
+    private volatile boolean initializing = false;
+
     private LanguageServersRegistry() {
-        initialize();
         registerExtensionPointListeners();
     }
 
-    private void initialize() {
-        // Load language servers / mappings / semanticTokensColorsProvider from user extension point
-        loadServersAndMappingsFromExtensionPoint();
-
-        // Load language servers / mappings from user settings
-        loadServersAndMappingFromSettings();
-        updateLanguages();
+    private void ensureInitialized() {
+        if (!initialized) {
+            synchronized (this) {
+                if (!initialized) {
+                    if (initializing) {
+                        // Another thread is initializing, wait for it to finish
+                        while (initializing) {
+                            try {
+                                this.wait();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                LOGGER.warn("Interrupted while waiting for LanguageServersRegistry initialization", e);
+                                return;
+                            }
+                        }
+                    } else {
+                        // We are the first thread, do the initialization
+                        try {
+                            initializing = true;
+                            // Lazy initialization on first access instead of in constructor
+                            // Load language servers / mappings / semanticTokensColorsProvider from user extension point
+                            loadServersAndMappingsFromExtensionPoint();
+                            // Load language servers / mappings from user settings
+                            loadServersAndMappingFromSettings();
+                            updateLanguages();
+                            initialized = true;
+                        } finally {
+                            initializing = false;
+                            this.notifyAll();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void registerExtensionPointListeners() {
@@ -311,6 +340,7 @@ public class LanguageServersRegistry implements Disposable {
      * @see #getSupportedLanguages()
      */
     public @NotNull Set<Language> getSupportedLanguages(boolean refreshCache) {
+        // Don't call ensureInitialized() here - this method is called during initialization itself
         if (supportedLanguages != null && !refreshCache) {
             return supportedLanguages;
         }
@@ -460,6 +490,7 @@ public class LanguageServersRegistry implements Disposable {
      * @return true if the given language is associated to a custom FindUsagesProvider and false otherwise.
      */
     public boolean hasCustomLanguageFindUsages(@Nullable Language language) {
+        ensureInitialized();
         return language != null && customLanguageFindUsages.contains(language);
     }
 
@@ -492,12 +523,14 @@ public class LanguageServersRegistry implements Disposable {
      * This does <strong>not</strong> include the one that match transitively as per content-type hierarchy
      */
     List<LanguageServerFileAssociation> findLanguageServerDefinitionFor(final @Nullable Language language, @Nullable FileType fileType, @NotNull String fileName) {
+        ensureInitialized();
         return fileAssociations.stream()
                 .filter(mapping -> mapping.match(language, fileType, fileName))
                 .collect(Collectors.toList());
     }
 
     public List<LanguageServerFileAssociation> findLanguageServerDefinitionFor(final @NotNull String serverId) {
+        ensureInitialized();
         return fileAssociations.stream()
                 .filter(mapping -> serverId.equals(mapping.getServerDefinition().getId()))
                 .collect(Collectors.toList());
@@ -546,6 +579,7 @@ public class LanguageServersRegistry implements Disposable {
      * @return the language server definition for the given language server id and null otherwise.
      */
     public @Nullable LanguageServerDefinition getServerDefinition(@NotNull String languageServerId) {
+        ensureInitialized();
         return serverDefinitions.get(languageServerId);
     }
 
@@ -555,12 +589,14 @@ public class LanguageServersRegistry implements Disposable {
      * @return the registered server definitions.
      */
     public Collection<LanguageServerDefinition> getServerDefinitions() {
+        ensureInitialized();
         return serverDefinitions.values();
     }
 
     public void addServerDefinition(@NotNull Project project,
                                     @NotNull LanguageServerDefinition serverDefinition,
                                     @Nullable List<ServerMappingSettings> mappings) {
+        ensureInitialized();
         String languageServerId = serverDefinition.getId();
         addServerDefinitionWithoutNotification(serverDefinition, toServerMappings(languageServerId, mappings), true);
         updateLanguages();
@@ -643,6 +679,7 @@ public class LanguageServersRegistry implements Disposable {
     }
 
     public void removeServerDefinition(@NotNull Project project, @NotNull LanguageServerDefinition serverDefinition) {
+        ensureInitialized();
         String languageServerId = serverDefinition.getId();
         // remove server
         serverDefinitions.remove(languageServerId);
@@ -943,6 +980,7 @@ public class LanguageServersRegistry implements Disposable {
 
     public LanguageServerDefinitionListener.@Nullable LanguageServerChangedEvent updateServerDefinition(@NotNull UpdateServerDefinitionRequest request,
                                                                                                         boolean notify) {
+        ensureInitialized();
         String languageServerId = request.serverDefinition().getId();
         var serverDefinition = request.serverDefinition();
 
@@ -1071,6 +1109,7 @@ public class LanguageServersRegistry implements Disposable {
                                     @Nullable VirtualFile file,
                                     @Nullable PsiFile psiFile,
                                     @NotNull Project project) {
+        ensureInitialized();
         if (fileAssociations
                 .stream()
                 .anyMatch(mapping -> mapping.match(language, fileType, filename))) {
@@ -1099,6 +1138,7 @@ public class LanguageServersRegistry implements Disposable {
      */
     @ApiStatus.Internal
     public boolean isFileSupported(@Nullable VirtualFile virtualFile, @Nullable Language language) {
+        ensureInitialized();
         if (virtualFile == null) {
             return false;
         }
@@ -1118,6 +1158,7 @@ public class LanguageServersRegistry implements Disposable {
      * @return the LSP codeLens / color inlay hint providers for all languages which are associated with a language server.
      */
     public List<ProviderInfo<?>> getInlayHintProviderInfos() {
+        ensureInitialized();
         return inlayHintsProviders;
     }
 
@@ -1125,6 +1166,7 @@ public class LanguageServersRegistry implements Disposable {
      * @return the LSP inlayHint inlay hint providers for all languages which are associated with a language server.
      */
     public Map<String, List<InlayProviderInfo>> getDeclarativeInlayHintProviderInfos() {
+        ensureInitialized();
         return declarativeInlayHintsProviders;
     }
 
@@ -1150,6 +1192,7 @@ public class LanguageServersRegistry implements Disposable {
      */
     @Nullable
     public List<String> getFileExtensions(String languageId) {
+        ensureInitialized();
         return languageIdFileExtensionsCache.get(languageId);
     }
 }

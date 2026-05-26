@@ -171,8 +171,8 @@ public class LanguageServerExplorer extends SimpleToolWindowPanel implements Dis
         Tree tree = new Tree(top);
         tree.setRootVisible(false);
 
-        // Fill tree will all language server definitions, ordered alphabetically
-        loadLanguageServerDefinitions(top);
+        // Don't load language server definitions here to avoid blocking EDT
+        // They will be loaded asynchronously in load()
 
         tree.setCellRenderer(new LanguageServerTreeRenderer());
 
@@ -354,8 +354,28 @@ public class LanguageServerExplorer extends SimpleToolWindowPanel implements Dis
 
     /**
      * Initialize language server process with the started language servers.
+     * Also loads the language server definitions asynchronously to avoid blocking EDT.
      */
     public void load() {
+        // Load language server definitions asynchronously to avoid blocking EDT
+        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            if (isDisposed()) {
+                return;
+            }
+            // Load server definitions (may be slow - done on background thread)
+            DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+            loadLanguageServerDefinitions(root);
+
+            // Update tree model on EDT
+            com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
+                if (!isDisposed()) {
+                    treeModel.reload(root);
+                }
+            });
+        });
+
+        // Load started servers
         LanguageServiceAccessor
                 .getInstance(getProject())
                 .getStartedServers()

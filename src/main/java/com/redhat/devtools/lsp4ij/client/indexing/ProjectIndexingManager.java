@@ -74,7 +74,11 @@ public class ProjectIndexingManager implements Disposable {
 
     @Override
     public void dispose() {
-        CancellationSupport.cancel(waitForIndexingAllFuture);
+        // Clear files to refresh for this project to prevent memory leak
+        filesToRefresh.clear();
+
+        // Don't cancel waitForIndexingAllFuture here - it's a static field shared across all projects.
+        // Canceling it when one project closes would break other open projects that are still using it.
     }
 
     public static CompletableFuture<Void> waitForIndexingAll() {

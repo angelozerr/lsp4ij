@@ -50,9 +50,12 @@ public class LSPBreadcrumbsRefreshListener implements ProjectActivity, LanguageS
     private static final Key<Boolean> ADDED_BREADCRUMB_LISTENER = Key.create(LSPBreadcrumbsRefreshListener.class + ".ADDED_BREADCRUMB_LISTENER");
     private static final Key<Boolean> NEEDS_RESTART = Key.create(LSPBreadcrumbsRefreshListener.class + ".NEEDS_RESTART");
 
+    private Project project;
+
     @Override
     @Nullable
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+        this.project = project;
         LanguageServerLifecycleManager.getInstance(project).addLanguageServerLifecycleListener(this);
         return null;
     }
@@ -97,6 +100,10 @@ public class LSPBreadcrumbsRefreshListener implements ProjectActivity, LanguageS
 
     @Override
     public void dispose() {
+        // Remove the listener to prevent memory leak
+        if (project != null) {
+            LanguageServerLifecycleManager.getInstance(project).removeLanguageServerLifecycleListener(this);
+        }
     }
 
     private record LSPBreadcrumbListener(PsiFile file, Editor editor) implements BreadcrumbListener {
