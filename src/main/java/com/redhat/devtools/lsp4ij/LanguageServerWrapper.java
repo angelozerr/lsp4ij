@@ -1683,6 +1683,22 @@ public class LanguageServerWrapper implements Disposable {
             if (current) {
                 this.launcherFuture = null;
                 this.lspStreamProvider = null;
+
+                // Cancel all ongoing LSP requests by disposing LSPFileSupport for all opened files.
+                // This prevents futures from hanging indefinitely when the server crashes or stops.
+                // Note: This cancels futures from all language servers associated with these files,
+                // not just this server. The LSPFileSupport will be recreated automatically when needed.
+                for (OpenedDocument openedDocument : new ArrayList<>(this.openedDocuments.values())) {
+                    VirtualFile file = openedDocument.getFile();
+                    if (file != null && file.isValid()) {
+                        PsiFile psiFile = LSPIJUtils.getPsiFile(file, getProject());
+                        if (psiFile != null && LSPFileSupport.hasSupport(psiFile)) {
+                            LSPFileSupport fileSupport = LSPFileSupport.getSupport(psiFile);
+                            Disposer.dispose(fileSupport);
+                        }
+                    }
+                }
+
                 while (!this.openedDocuments.isEmpty()) {
                     disconnect(this.openedDocuments.keySet().iterator().next(), false);
                 }

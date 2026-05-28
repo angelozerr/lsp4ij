@@ -176,10 +176,33 @@ public class LSPFileSupport extends UserDataHolderBase implements Disposable {
         return file.getUserData(LSP_FILE_SUPPORT_KEY) != null;
     }
 
+    /**
+     * Disposes this LSP file support and cancels all ongoing LSP requests.
+     *
+     * <p>
+     * This method cancels all pending futures for all features (hover, completion, code lens, etc.)
+     * from <strong>all language servers</strong> associated with this file. This means that even if
+     * multiple language servers are handling this file, all their ongoing requests will be cancelled.
+     * </p>
+     *
+     * <p>
+     * This method is called in the following scenarios:
+     * <ul>
+     *     <li>When the file is closed in the editor</li>
+     *     <li>When the IntelliJ project is closed</li>
+     *     <li>When a language server stops (crashes or is manually stopped)</li>
+     * </ul>
+     * </p>
+     *
+     * <p>
+     * After disposal, if LSP features are needed again (e.g., after a server restart or when another
+     * server is still active), a new {@link LSPFileSupport} instance will be automatically created.
+     * </p>
+     */
     @Override
     public void dispose() {
         this.disposed = true;
-        // cancel all LSP requests
+        // cancel all LSP requests from all servers
         file.putUserData(LSP_FILE_SUPPORT_KEY, null);
         getCodeLensSupport().cancel();
         getInlayHintsSupport().cancel();
@@ -197,8 +220,10 @@ public class LSPFileSupport extends UserDataHolderBase implements Disposable {
         getPrepareRenameSupport().cancel();
         getRenameSupport().cancel();
         getCompletionSupport().cancel();
+        getInlineCompletionSupport().cancel();
         getImplementationSupport().cancel();
         getReferenceSupport().cancel();
+        getDefinitionSupport().cancel();
         getDeclarationSupport().cancel();
         getTypeDefinitionSupport().cancel();
         getSemanticTokensSupport().cancel();
